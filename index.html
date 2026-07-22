@@ -78,14 +78,14 @@
         let wallet = 0;
         let toolsCount = 0;
         let p = { x: 1, y: 1 };
-        let currentSkin = '🏃‍♂️'; // Изначально строго пешком!
+        let currentSkin = '🏃‍♂️'; 
         let currentMap = [];
         
         let level = 1;
-        let baseTime = 15; // Базовое хардкорное время
+        let baseTime = 15; 
         let timeLeft = 15; 
         let timerInterval = null; 
-        let currentTax = 50; // Базовый налог за раунд
+        let currentTax = 50; 
 
         let touchStartX = 0; let touchStartY = 0;
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -116,11 +116,11 @@
             }
         }
 
+        // ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ И СТАБИЛЬНЫЙ ГЕНЕРАТОР ГОРОДА
         function generateLevel() {
             currentMap = [];
-            // Повышаем плотность застройки с ростом уровней
             let wallChance = 0.14 + (level * 0.01);
-            if (wallChance > 0.23) wallChance = 0.23;
+            if (wallChance > 0.22) wallChance = 0.22;
 
             for (let y = 0; y < 10; y++) {
                 let row = [];
@@ -142,8 +142,10 @@
                 }
                 currentMap.push(row);
             }
-            currentMap = 'E';
-            currentMap = 'F';
+            // Точечная бесконфликтная запись точек старта и финиша в двумерный массив
+            currentMap[1][1] = 'E';
+            currentMap[8][8] = 'F';
+            
             p = { x: 1, y: 1 };
             resetTimer();
         }
@@ -163,13 +165,12 @@
                 }
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    handleTaxPayment(false); // Дедлайн провален, списываем налог без бонуса финиша
+                    handleTaxPayment(false); 
                 }
             }, 1000);
         }
 
         function resetTimer() {
-            // Бонус к времени за купленный транспорт
             let bonusTime = 0;
             if (currentSkin === '🚴') bonusTime = 3;
             if (currentSkin === '🛴') bonusTime = 6;
@@ -183,13 +184,12 @@
             startTimer();
         }
 
-        // ЖЕСТКАЯ СИСТЕМА НАЛОГОВ И БАНКРОТСТВА
         function handleTaxPayment(isSuccessClose) {
-            currentTax = 40 + (level * 15); // Налог растет с каждым уровнем
+            currentTax = 40 + (level * 15); 
             document.getElementById('tax-txt').innerText = currentTax;
 
             if (isSuccessClose) {
-                wallet += 120; // Премия за успешную доставку в главный офис
+                wallet += 120; 
                 level++;
                 showToast(`🏁 Доставлено! +120$. Квартальный налог -${currentTax}$`);
             } else {
@@ -200,13 +200,10 @@
             document.getElementById('money-txt').innerText = wallet;
             document.getElementById('lvl-txt').innerText = level;
 
-            // КРИЗИС: Проверка на банкротство
             if (wallet < 0) {
                 clearInterval(timerInterval);
                 playSound('gameover');
-                alert(`💸 ВЫ БАНКРОТ! Вы не смогли оплатить налоги компании. Ваши счета обнулены, транспорт конфискован. Ваш максимальный уровень: ${level}`);
-                
-                // Полное обнуление прогресса
+                alert(`💸 ВЫ БАНКРОТ! Вы не смогли оплатить налоги компании. Ваши счета обнулены, транспорт конфискован. Ваш макс. уровень: ${level}`);
                 wallet = 0; level = 1; toolsCount = 0; currentSkin = '🏃‍♂️';
                 localStorage.setItem('courier_skin_bought', 'false');
                 localStorage.setItem('courier_scooter_bought', 'false');
@@ -221,7 +218,8 @@
 
         function draw() {
             const container = document.getElementById('maze-grid');
-            if (!container) return; container.innerHTML = '';
+            if (!container || !currentMap || currentMap.length === 0) return; 
+            container.innerHTML = '';
             for (let y = 0; y < 10; y++) {
                 for (let x = 0; x < 10; x++) {
                     const cell = document.createElement('div');
@@ -238,7 +236,7 @@
         }
 
         function triggerRestart() {
-            wallet -= 30; // Штраф за вызов ложного такси
+            wallet -= 30; 
             document.getElementById('money-txt').innerText = wallet;
             if (wallet < 0) { handleTaxPayment(false); return; }
             generateLevel(); draw();
@@ -265,13 +263,13 @@
             if (currentMap[ny] && currentMap[ny][nx] !== 'W' && currentMap[ny][nx] !== 'T') {
                 p.x = nx; p.y = ny; playSound('step');
                 if (currentMap[p.y][p.x] === 'M') {
-                    wallet += 25; currentMap[p.y][p.x] = 'E'; // Снизили стоимость пачки до 25$
+                    wallet += 25; currentMap[p.y][p.x] = 'E'; 
                     document.getElementById('money-txt').innerText = wallet;
                     showToast("💵 Чек подобран! +25$"); playSound('coin'); saveLocalData();
                 }
                 if (currentMap[p.y][p.x] === 'F') {
                     playSound('coin');
-                    handleTaxPayment(true); // Успешный финиш
+                    handleTaxPayment(true); 
                 }
                 draw();
             }
@@ -314,7 +312,7 @@
             document.getElementById('money-txt').innerText = wallet;
             document.getElementById('lvl-txt').innerText = level;
             currentTax = 40 + (level * 15);
-            document.getElementById('tax-txt').innerText = currentTax;
+            if(document.getElementById('tax-txt')) document.getElementById('tax-txt').innerText = currentTax;
             generateLevel(); draw();
         }
 
