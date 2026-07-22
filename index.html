@@ -9,6 +9,7 @@
         body { margin: 0; padding: 10px; background-color: #111114; font-family: 'Segoe UI', sans-serif; color: #fff; text-align: center; user-select: none; touch-action: none; }
         .ui-panel { background: #1e1e24; padding: 12px; margin: 0 auto 5px auto; width: 310px; border-radius: 10px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.5); align-items: center; border: 1px solid #2e2e38; font-size: 13px; flex-wrap: wrap; gap: 5px; }
         .money { color: #f1c40f; text-shadow: 0 0 5px rgba(241,196,15,0.3); }
+        .money-debt { color: #e74c3c; text-shadow: 0 0 5px rgba(231,76,60,0.3); }
         .tax { color: #e74c3c; }
         
         .timer-container { font-size: 14px; color: #2ecc71; background: rgba(46, 204, 113, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(46, 204, 113, 0.3); }
@@ -25,13 +26,22 @@
         
         #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; }
         #toast.show { top: 20px; }
-        
         .shop-container { background: #1e1e24; width: 310px; margin: 10px auto; padding: 12px; border-radius: 10px; text-align: left; border: 1px solid #2e2e38; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
-        .shop-title { font-size: 13px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #2e2e38; padding-bottom: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .shop-title { font-size: 15px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #2e2e38; padding-bottom: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #2e2e38; }
         .shop-item:last-child { border-bottom: none; }
         .buy-btn { background: #2ecc71; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; box-shadow: 0 2px #27ae60; }
         .buy-btn:disabled { background: #2f3542; color: #57606f; cursor: not-allowed; box-shadow: none; }
+
+        #shredder-screen { display: none; background: #1e1e24; width: 320px; margin: 15px auto; padding: 15px; border-radius: 12px; border: 2px dashed #e74c3c; box-shadow: 0 8px 16px rgba(0,0,0,0.5); }
+        .shredder-title { color: #e74c3c; font-size: 16px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
+        .shredder-icon { font-size: 50px; margin: 15px 0; animation: shake 0.3s infinite alternate paused; }
+        .shredder-active { animation-play-state: running; }
+        @keyframes shake { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+        .progress-container { background: #111114; border-radius: 10px; padding: 3px; width: 100%; box-sizing: border-box; margin: 15px 0; }
+        .progress-bar { background: #e74c3c; height: 12px; border-radius: 8px; width: 0%; transition: width 0.1s; }
+        .shredder-btn { background: #e74c3c; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; width: 100%; box-shadow: 0 4px #c0392b; }
+        .shredder-btn:active { transform: translateY(2px); box-shadow: 0 2px #c0392b; }
     </style>
 </head>
 <body>
@@ -39,15 +49,26 @@
     <div id="toast">Заказ принят! 📦</div>
 
     <div class="ui-panel">
-        <div>💵 Баланс: <span id="money-txt" class="money">0</span>$</div>
+        <div>💵 Баланс: <span id="money-txt" class="money">0$</span></div>
         <div>📈 Лвл: <span id="lvl-txt" style="color: #3498db;">1</span></div>
         <div>🔻 Налог: <span id="tax-txt" class="tax">50</span>$</div>
         <div>🎒 Ключи: <span id="tools-txt" style="color: #e67e22;">0</span> шт.</div>
         <div class="timer-container">⏱️ <span id="timer-txt">15</span>с</div>
-        <button class="restart-btn" onclick="triggerRestart()">🚕 Такси (-30$)</button>
+        <button class="restart-btn" id="taxi-btn" onclick="triggerRestart()">🚕 Такси (-30$)</button>
     </div>
 
     <div id="maze-grid"></div>
+
+    <div id="shredder-screen">
+        <div class="shredder-title">🚨 Шредерная отработка!</div>
+        <div style="font-size: 12px; color: #aaa;">Вы задолжали компании более -500$. Уничтожьте 100 документов, чтобы полностью списать долг и вернуться к заказам!</div>
+        <div class="shredder-icon" id="shred-emoji">📄</div>
+        <div style="font-size: 13px; font-weight: bold;">Уничтожено: <span id="shred-count">0</span> / 100</div>
+        <div class="progress-container">
+            <div class="progress-bar" id="shred-progress"></div>
+        </div>
+        <button class="shredder-btn" onclick="clickShredder()">🖨️ Уничтожить бумагу</button>
+    </div>
 
     <div class="shop-container">
         <div class="shop-title">🏪 Элитный Автосалон (Прокачка)</div>
@@ -88,6 +109,7 @@
         let timeLeft = 15; 
         let timerInterval = null; 
         let currentTax = 50; 
+        let shredClicks = 0; 
 
         let touchStartX = 0; let touchStartY = 0;
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -115,9 +137,13 @@
                 osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.5);
                 gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'shred') { 
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
             }
         }
-
         function generateLevel() {
             currentMap = [];
             let wallChance = 0.14 + (level * 0.01);
@@ -143,12 +169,14 @@
                 }
                 currentMap.push(row);
             }
-            currentMap = 'E';
-            currentMap = 'F';
+            
+            if(currentMap && currentMap[1]) currentMap[1][1] = 'E';
+            if(currentMap && currentMap[8]) currentMap[8][8] = 'F';
             
             p = { x: 1, y: 1 };
             resetTimer();
         }
+
         function startTimer() {
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
@@ -189,42 +217,80 @@
             if(document.getElementById('tax-txt')) document.getElementById('tax-txt').innerText = currentTax;
 
             if (isSuccessClose) {
-                wallet += 120; 
-                level++;
-                showToast(`🏁 Доставлено! +120$. Квартальный налог -${currentTax}$`);
+                wallet += 120; level++;
+                showToast(`🏁 Доставлено! +120$. Налог района -${currentTax}$`);
             } else {
-                showToast(`⏰ Опоздание! Премии нет. Квартальный налог -${currentTax}$`, "#e74c3c");
+                showToast(`⏰ Опоздание! Премии нет. Налог района -${currentTax}$`, "#e74c3c");
             }
 
             wallet -= currentTax;
-            document.getElementById('money-txt').innerText = wallet;
-            document.getElementById('lvl-txt').innerText = level;
+            
+            const moneyTxt = document.getElementById('money-txt');
+            if(moneyTxt) {
+                moneyTxt.innerText = wallet + "$";
+                moneyTxt.className = wallet < 0 ? "money-debt" : "money";
+            }
+            if(document.getElementById('lvl-txt')) document.getElementById('lvl-txt').innerText = level;
 
-            if (wallet < 0) {
+            if (wallet <= -500) {
                 clearInterval(timerInterval);
                 playSound('gameover');
-                alert(`💸 ВЫ БАНКРОТ! Вы не смогли оплатить налоги компании. Ваши счета обнулены, транспорт конфискован. Ваш макс. уровень: ${level}`);
+                document.getElementById('maze-grid').style.display = 'none';
+                document.getElementById('taxi-btn').style.display = 'none';
+                document.getElementById('shredder-screen').style.display = 'block';
+                shredClicks = 0;
+                document.getElementById('shred-count').innerText = "0";
+                document.getElementById('shred-progress').style.width = "0%";
+                return; 
+            }
+
+            saveLocalData(); generateLevel(); draw();
+        }
+        function clickShredder() {
+            shredClicks++;
+            playSound('shred');
+            const emoji = document.getElementById('shred-emoji');
+            if(emoji) {
+                emoji.classList.add('shredder-active');
+                setTimeout(() => emoji.classList.remove('shredder-active'), 100);
+            }
+            document.getElementById('shred-count').innerText = shredClicks;
+            document.getElementById('shred-progress').style.width = shredClicks + "%";
+
+            if (shredClicks >= 100) {
                 wallet = 0; level = 1; toolsCount = 0; currentSkin = '🏃‍♂️';
                 localStorage.setItem('courier_skin_bought', 'false');
                 localStorage.setItem('courier_scooter_bought', 'false');
-                document.getElementById('money-txt').innerText = wallet;
-                document.getElementById('lvl-txt').innerText = level;
+                
+                const moneyTxt = document.getElementById('money-txt');
+                if(moneyTxt) { moneyTxt.innerText = wallet + "$"; moneyTxt.className = "money"; }
+                if(document.getElementById('lvl-txt')) document.getElementById('lvl-txt').innerText = level;
                 if(document.getElementById('tools-txt')) document.getElementById('tools-txt').innerText = toolsCount;
+                
+                document.getElementById('shredder-screen').style.display = 'none';
+                document.getElementById('maze-grid').style.display = 'grid';
+                document.getElementById('taxi-btn').style.display = 'inline-block';
+                
+                showToast("💼 Долг списан! Вас вернули на работу.");
+                saveLocalData(); generateLevel(); draw();
             }
-
-            saveLocalData();
-            generateLevel();
-            draw();
         }
 
+        // ЗАЩИЩЕННАЯ ОТРИСОВКА (Исключает ошибку Cannot read properties of undefined '0')
         function draw() {
             const container = document.getElementById('maze-grid');
-            if (!container || !currentMap || currentMap.length === 0) return; 
+            if (!container) return;
             container.innerHTML = '';
+            
+            // Если массив стёрся, принудительно перезапускаем генерацию
+            if (!currentMap || currentMap.length === 0 || !currentMap[0]) {
+                generateLevel();
+            }
+            
             for (let y = 0; y < 10; y++) {
                 for (let x = 0; x < 10; x++) {
                     const cell = document.createElement('div');
-                    let type = currentMap[y][x];
+                    let type = (currentMap[y] && currentMap[y][x]) ? currentMap[y][x] : 'E';
                     cell.className = 'cell ' + (type === 'M' || type === 'F' ? 'E' : type);
                     cell.onclick = () => breakWall(x, y);
                     if (x === p.x && y === p.y) { cell.innerText = currentSkin; }
@@ -238,14 +304,18 @@
 
         function triggerRestart() {
             wallet -= 30; 
-            document.getElementById('money-txt').innerText = wallet;
-            if (wallet < 0) { handleTaxPayment(false); return; }
+            const moneyTxt = document.getElementById('money-txt');
+            if(moneyTxt) {
+                moneyTxt.innerText = wallet + "$";
+                if (wallet < 0) { moneyTxt.className = "money-debt"; }
+            }
+            if (wallet <= -500) { handleTaxPayment(false); return; }
             generateLevel(); draw();
-            showToast("🚕 Сменили район! Диспетчер выписал штраф -30$.", "#3498db");
+            showToast("🚕 Вызвали такси! Штраф диспетчера -30$.", "#3498db");
         }
 
         function breakWall(x, y) {
-            if ((currentMap[y][x] === 'W' || currentMap[y][x] === 'T') && x > 0 && x < 9 && y > 0 && y < 9) {
+            if (currentMap[y] && (currentMap[y][x] === 'W' || currentMap[y][x] === 'T') && x > 0 && x < 9 && y > 0 && y < 9) {
                 if (toolsCount > 0) {
                     toolsCount--; currentMap[y][x] = 'E';
                     const toolsTxt = document.getElementById('tools-txt');
@@ -261,26 +331,31 @@
         }
 
         function move(dx, dy) {
+            if (wallet <= -500) return;
             let nx = p.x + dx; let ny = p.y + dy;
             if (currentMap[ny] && currentMap[ny][nx] !== 'W' && currentMap[ny][nx] !== 'T') {
                 p.x = nx; p.y = ny; playSound('step');
                 if (currentMap[p.y][p.x] === 'M') {
                     wallet += 25; currentMap[p.y][p.x] = 'E'; 
-                    document.getElementById('money-txt').innerText = wallet;
+                    const moneyTxt = document.getElementById('money-txt');
+                    if(moneyTxt) {
+                        moneyTxt.innerText = wallet + "$";
+                        if (wallet >= 0) moneyTxt.className = "money";
+                    }
                     showToast("💵 Чек подобран! +25$"); playSound('coin'); saveLocalData();
                 }
                 if (currentMap[p.y][p.x] === 'F') {
-                    playSound('coin');
-                    handleTaxPayment(true); 
+                    playSound('coin'); handleTaxPayment(true); 
                 }
                 draw();
             }
         }
 
         function buyTool() {
+            if (wallet < 0) { showToast("❌ Нельзя покупать в долг!", "#e74c3c"); return; }
             if (wallet >= 100) {
                 wallet -= 100; toolsCount++;
-                document.getElementById('money-txt').innerText = wallet;
+                document.getElementById('money-txt').innerText = wallet + "$";
                 const toolsTxt = document.getElementById('tools-txt');
                 if(toolsTxt) toolsTxt.innerText = toolsCount;
                 showToast("🔑 Получен Мастер-Ключ!"); updateShop(); saveLocalData();
@@ -288,8 +363,9 @@
         }
 
         function buyItem(id, price, emoji) {
+            if (wallet < 0) { showToast("❌ Нельзя покупать в долг!", "#e74c3c"); return; }
             if (wallet >= price) {
-                wallet -= price; document.getElementById('money-txt').innerText = wallet;
+                wallet -= price; document.getElementById('money-txt').innerText = wallet + "$";
                 currentSkin = emoji; 
                 localStorage.setItem(`courier_${id}_bought`, 'true');
                 showToast("💼 Транспорт куплен! Время раундов увеличено!");
@@ -313,13 +389,25 @@
             else if (localStorage.getItem('courier_skin_bought') === 'true') currentSkin = '🚴';
             else currentSkin = '🏃‍♂️';
 
-            document.getElementById('money-txt').innerText = wallet;
-            document.getElementById('lvl-txt').innerText = level;
+            const moneyTxt = document.getElementById('money-txt');
+            if(moneyTxt) {
+                moneyTxt.innerText = wallet + "$";
+                if (wallet < 0) moneyTxt.className = "money-debt";
+            }
+            
+            if(document.getElementById('lvl-txt')) document.getElementById('lvl-txt').innerText = level;
             const toolsTxt = document.getElementById('tools-txt');
             if(toolsTxt) toolsTxt.innerText = toolsCount;
             currentTax = 40 + (level * 15);
             if(document.getElementById('tax-txt')) document.getElementById('tax-txt').innerText = currentTax;
-            generateLevel(); draw();
+            
+            if (wallet <= -500) {
+                document.getElementById('maze-grid').style.display = 'none';
+                document.getElementById('taxi-btn').style.display = 'none';
+                document.getElementById('shredder-screen').style.display = 'block';
+            } else {
+                generateLevel(); draw();
+            }
         }
 
         function saveLocalData() {
