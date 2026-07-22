@@ -16,6 +16,11 @@
         .timer-danger { animation: blink 0.5s infinite alternate; color: #ff4757; background: rgba(231, 76, 60, 0.2); border: 1px solid #ff4757; font-weight: bold; }
         @keyframes blink { from { opacity: 1; } to { opacity: 0.4; } }
         
+        /* Стили кнопок управления */
+        .restart-btn { background: #3498db; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .code-btn { background: #9b59b6; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; box-shadow: 0 2px #8e44ad; }
+        .code-btn:active { transform: translateY(1px); box-shadow: 0 0 #8e44ad; }
+
         #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.7); border: 2px solid #34495e; }
         .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
         .W { background: #57606f; position: relative; } 
@@ -49,11 +54,11 @@
     <div id="toast">Заказ принят! 📦</div>
 
     <div class="ui-panel">
-        <div>💵 Баланс: <span id="money-txt" class="money">0$</span></div>
+        <div>💵 Выручка: <span id="money-txt" class="money">0$</span></div>
         <div>📈 Лвл: <span id="lvl-txt" style="color: #3498db;">1</span></div>
-        <div>🔻 Налог: <span id="tax-txt" class="tax">50</span>$</div>
         <div>🎒 Ключи: <span id="tools-txt" style="color: #e67e22;">0</span> шт.</div>
         <div class="timer-container">⏱️ <span id="timer-txt">15</span>с</div>
+        <button class="code-btn" onclick="copyRecordCode()">📋 Код</button>
         <button class="restart-btn" id="taxi-btn" onclick="triggerRestart()">🚕 Такси (-30$)</button>
     </div>
 
@@ -144,6 +149,22 @@
                 osc.start(); osc.stop(audioCtx.currentTime + 0.05);
             }
         }
+
+        // ФУНКЦИЯ ШИФРОВАНИЯ РЕКОРДА ДЛЯ ОФИСНОГО ЧАТА
+        function copyRecordCode() {
+            if (wallet < 0) { showToast("❌ Нельзя выдать код с долгами!", "#e74c3c"); return; }
+            
+            // Простейший алгоритм шифрования, чтобы коллеги не накручивали цифры руками
+            let code = `🏆курьер_${level}L_${wallet * 3 + 7}X`;
+            
+            // Копируем строчку в буфер обмена
+            navigator.clipboard.writeText(code).then(() => {
+                showToast("📋 Код рекорда скопирован! Отправь его в чат.");
+            }).catch(() => {
+                // Запасной вариант для старых браузеров
+                alert(`Ваш код рекорда (скопируйте его): ${code}`);
+            });
+        }
         function generateLevel() {
             currentMap = [];
             let wallChance = 0.14 + (level * 0.01);
@@ -169,10 +190,8 @@
                 }
                 currentMap.push(row);
             }
-            
-            if(currentMap && currentMap[1]) currentMap[1][1] = 'E';
-            if(currentMap && currentMap[8]) currentMap[8][8] = 'F';
-            
+            currentMap = 'E';
+            currentMap = 'F';
             p = { x: 1, y: 1 };
             resetTimer();
         }
@@ -214,8 +233,6 @@
 
         function handleTaxPayment(isSuccessClose) {
             currentTax = 40 + (level * 15); 
-            if(document.getElementById('tax-txt')) document.getElementById('tax-txt').innerText = currentTax;
-
             if (isSuccessClose) {
                 wallet += 120; level++;
                 showToast(`🏁 Доставлено! +120$. Налог района -${currentTax}$`);
@@ -224,17 +241,12 @@
             }
 
             wallet -= currentTax;
-            
             const moneyTxt = document.getElementById('money-txt');
-            if(moneyTxt) {
-                moneyTxt.innerText = wallet + "$";
-                moneyTxt.className = wallet < 0 ? "money-debt" : "money";
-            }
+            if(moneyTxt) { moneyTxt.innerText = wallet + "$"; moneyTxt.className = wallet < 0 ? "money-debt" : "money"; }
             if(document.getElementById('lvl-txt')) document.getElementById('lvl-txt').innerText = level;
 
             if (wallet <= -500) {
-                clearInterval(timerInterval);
-                playSound('gameover');
+                clearInterval(timerInterval); playSound('gameover');
                 document.getElementById('maze-grid').style.display = 'none';
                 document.getElementById('taxi-btn').style.display = 'none';
                 document.getElementById('shredder-screen').style.display = 'block';
@@ -243,25 +255,18 @@
                 document.getElementById('shred-progress').style.width = "0%";
                 return; 
             }
-
             saveLocalData(); generateLevel(); draw();
         }
         function clickShredder() {
-            shredClicks++;
-            playSound('shred');
+            shredClicks++; playSound('shred');
             const emoji = document.getElementById('shred-emoji');
-            if(emoji) {
-                emoji.classList.add('shredder-active');
-                setTimeout(() => emoji.classList.remove('shredder-active'), 100);
-            }
+            if(emoji) { emoji.classList.add('shredder-active'); setTimeout(() => emoji.classList.remove('shredder-active'), 100); }
             document.getElementById('shred-count').innerText = shredClicks;
             document.getElementById('shred-progress').style.width = shredClicks + "%";
 
             if (shredClicks >= 100) {
                 wallet = 0; level = 1; toolsCount = 0; currentSkin = '🏃‍♂️';
-                localStorage.setItem('courier_skin_bought', 'false');
-                localStorage.setItem('courier_scooter_bought', 'false');
-                
+                localStorage.setItem('courier_skin_bought', 'false'); localStorage.setItem('courier_scooter_bought', 'false');
                 const moneyTxt = document.getElementById('money-txt');
                 if(moneyTxt) { moneyTxt.innerText = wallet + "$"; moneyTxt.className = "money"; }
                 if(document.getElementById('lvl-txt')) document.getElementById('lvl-txt').innerText = level;
@@ -270,22 +275,15 @@
                 document.getElementById('shredder-screen').style.display = 'none';
                 document.getElementById('maze-grid').style.display = 'grid';
                 document.getElementById('taxi-btn').style.display = 'inline-block';
-                
                 showToast("💼 Долг списан! Вас вернули на работу.");
                 saveLocalData(); generateLevel(); draw();
             }
         }
 
-        // ЗАЩИЩЕННАЯ ОТРИСОВКА (Исключает ошибку Cannot read properties of undefined '0')
         function draw() {
             const container = document.getElementById('maze-grid');
-            if (!container) return;
-            container.innerHTML = '';
-            
-            // Если массив стёрся, принудительно перезапускаем генерацию
-            if (!currentMap || currentMap.length === 0 || !currentMap[0]) {
-                generateLevel();
-            }
+            if (!container) return; container.innerHTML = '';
+            if (!currentMap || currentMap.length === 0 || !currentMap) { generateLevel(); }
             
             for (let y = 0; y < 10; y++) {
                 for (let x = 0; x < 10; x++) {
@@ -303,12 +301,8 @@
         }
 
         function triggerRestart() {
-            wallet -= 30; 
-            const moneyTxt = document.getElementById('money-txt');
-            if(moneyTxt) {
-                moneyTxt.innerText = wallet + "$";
-                if (wallet < 0) { moneyTxt.className = "money-debt"; }
-            }
+            wallet -= 30; const moneyTxt = document.getElementById('money-txt');
+            if(moneyTxt) { moneyTxt.innerText = wallet + "$"; if (wallet < 0) { moneyTxt.className = "money-debt"; } }
             if (wallet <= -500) { handleTaxPayment(false); return; }
             generateLevel(); draw();
             showToast("🚕 Вызвали такси! Штраф диспетчера -30$.", "#3498db");
@@ -318,8 +312,7 @@
             if (currentMap[y] && (currentMap[y][x] === 'W' || currentMap[y][x] === 'T') && x > 0 && x < 9 && y > 0 && y < 9) {
                 if (toolsCount > 0) {
                     toolsCount--; currentMap[y][x] = 'E';
-                    const toolsTxt = document.getElementById('tools-txt');
-                    if(toolsTxt) toolsTxt.innerText = toolsCount;
+                    const toolsTxt = document.getElementById('tools-txt'); if(toolsTxt) toolsTxt.innerText = toolsCount;
                     showToast("🧱 Квартал расчищен!"); draw(); saveLocalData();
                 } else { showToast("❌ Нужен Мастер-Ключ!", "#e74c3c"); }
             }
@@ -338,15 +331,10 @@
                 if (currentMap[p.y][p.x] === 'M') {
                     wallet += 25; currentMap[p.y][p.x] = 'E'; 
                     const moneyTxt = document.getElementById('money-txt');
-                    if(moneyTxt) {
-                        moneyTxt.innerText = wallet + "$";
-                        if (wallet >= 0) moneyTxt.className = "money";
-                    }
+                    if(moneyTxt) { moneyTxt.innerText = wallet + "$"; if (wallet >= 0) moneyTxt.className = "money"; }
                     showToast("💵 Чек подобран! +25$"); playSound('coin'); saveLocalData();
                 }
-                if (currentMap[p.y][p.x] === 'F') {
-                    playSound('coin'); handleTaxPayment(true); 
-                }
+                if (currentMap[p.y][p.x] === 'F') { playSound('coin'); handleTaxPayment(true); }
                 draw();
             }
         }
@@ -354,10 +342,8 @@
         function buyTool() {
             if (wallet < 0) { showToast("❌ Нельзя покупать в долг!", "#e74c3c"); return; }
             if (wallet >= 100) {
-                wallet -= 100; toolsCount++;
-                document.getElementById('money-txt').innerText = wallet + "$";
-                const toolsTxt = document.getElementById('tools-txt');
-                if(toolsTxt) toolsTxt.innerText = toolsCount;
+                wallet -= 100; toolsCount++; document.getElementById('money-txt').innerText = wallet + "$";
+                const toolsTxt = document.getElementById('tools-txt'); if(toolsTxt) toolsTxt.innerText = toolsCount;
                 showToast("🔑 Получен Мастер-Ключ!"); updateShop(); saveLocalData();
             }
         }
@@ -366,10 +352,8 @@
             if (wallet < 0) { showToast("❌ Нельзя покупать в долг!", "#e74c3c"); return; }
             if (wallet >= price) {
                 wallet -= price; document.getElementById('money-txt').innerText = wallet + "$";
-                currentSkin = emoji; 
-                localStorage.setItem(`courier_${id}_bought`, 'true');
-                showToast("💼 Транспорт куплен! Время раундов увеличено!");
-                draw(); saveLocalData();
+                currentSkin = emoji; localStorage.setItem(`courier_${id}_bought`, 'true');
+                showToast("💼 Транспорт куплен! Время раундов увеличено!"); draw(); saveLocalData();
             }
         }
 
@@ -384,37 +368,20 @@
             wallet = parseInt(localStorage.getItem('courier_wallet')) || 0;
             toolsCount = parseInt(localStorage.getItem('courier_tools')) || 0;
             level = parseInt(localStorage.getItem('courier_level')) || 1;
-            
             if (localStorage.getItem('courier_scooter_bought') === 'true') currentSkin = '🛴';
             else if (localStorage.getItem('courier_skin_bought') === 'true') currentSkin = '🚴';
             else currentSkin = '🏃‍♂️';
-
             const moneyTxt = document.getElementById('money-txt');
-            if(moneyTxt) {
-                moneyTxt.innerText = wallet + "$";
-                if (wallet < 0) moneyTxt.className = "money-debt";
-            }
-            
+            if(moneyTxt) { moneyTxt.innerText = wallet + "$"; if (wallet < 0) moneyTxt.className = "money-debt"; }
             if(document.getElementById('lvl-txt')) document.getElementById('lvl-txt').innerText = level;
-            const toolsTxt = document.getElementById('tools-txt');
-            if(toolsTxt) toolsTxt.innerText = toolsCount;
+            const toolsTxt = document.getElementById('tools-txt'); if(toolsTxt) toolsTxt.innerText = toolsCount;
             currentTax = 40 + (level * 15);
-            if(document.getElementById('tax-txt')) document.getElementById('tax-txt').innerText = currentTax;
-            
-            if (wallet <= -500) {
-                document.getElementById('maze-grid').style.display = 'none';
-                document.getElementById('taxi-btn').style.display = 'none';
-                document.getElementById('shredder-screen').style.display = 'block';
-            } else {
-                generateLevel(); draw();
-            }
+            generateLevel(); draw();
         }
 
         function saveLocalData() {
-            localStorage.setItem('courier_wallet', wallet);
-            localStorage.setItem('courier_tools', toolsCount);
-            localStorage.setItem('courier_level', level);
-            localStorage.setItem('courier_skin', currentSkin);
+            localStorage.setItem('courier_wallet', wallet); localStorage.setItem('courier_tools', toolsCount);
+            localStorage.setItem('courier_level', level); localStorage.setItem('courier_skin', currentSkin);
         }
 
         window.addEventListener('keydown', (e) => {
