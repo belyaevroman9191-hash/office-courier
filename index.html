@@ -83,14 +83,91 @@
         const tg = window.Telegram?.WebApp;
         if (tg && typeof tg.expand === 'function') tg.expand();
 
+        // АДРЕС ВАШЕГО СЕРВЕРА БАЗЫ ДАННЫХ ИЗ RENDER
+        const SERVER_URL = "https://onrender.com"; 
+        const userId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : "office_player_pc";
+
         let wallet = 0;
         let toolsCount = 0;
         let p = { x: 1, y: 1 };
         let currentSkin = '🚴'; 
         let currentMap = [];
-        
-        let timeLeft = 15; // Таймер на 15 секунд
+        let timeLeft = 15; 
         let timerInterval = null; 
+
+        // Инициализация аудио-контекста браузера
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+        }
+
+        // Генерация синтезированных звуков
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return;
+            
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'step') { // Короткий глухой стук шага
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.08);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+            } else if (type === 'coin') { // Шелест/звон баксов
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.12);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+            } else if (type === 'tick') { // Опасный писк таймера
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            }
+        }
+
+        // СИНХРОНИЗАЦИЯ: Загрузка данных сотрудника из БД
+        async function loadDataFromDB() {
+            try {
+                const res = await fetch(`${SERVER_URL}/get_player/${userId}`);
+                const data = await res.json();
+                wallet = data.coins || 0;
+                toolsCount = data.item1_count || 0;
+                document.getElementById('money-txt').innerText = wallet;
+                generateLevel();
+                draw();
+            } catch (e) {
+                console.log("Сервер недоступен, играем автономно");
+                generateLevel();
+                draw();
+            }
+        }
+
+        // СИНХРОНИЗАЦИЯ: Отправка прогресса на сервер
+        async function saveDataToDB() {
+            try {
+                await fetch(`${SERVER_URL}/save_player`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        coins: wallet,
+                        cps: 0,
+                        item1_count: toolsCount
+                    })
+                });
+            } catch (e) { console.log("Ошибка сохранения в БД"); }
+        }
 
         function generateLevel() {
             currentMap = [];
@@ -101,7 +178,6 @@
                         row.push('W');
                     } else {
                         let rand = Math.random();
-                        // Немного снизили плотность домов до 17% для лучшей проходимости за 15с
                         if (rand < 0.17 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
                             row.push('W'); 
                         } else if (rand >= 0.17 && rand < 0.24 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
@@ -113,24 +189,22 @@
                 }
                 currentMap.push(row);
             }
-            currentMap[1][1] = 'E';
-            currentMap[8][8] = 'F';
+            currentMap = 'E';
+            currentMap = 'F';
             p = { x: 1, y: 1 };
-            
             resetTimer(); 
         }
 
         function startTimer() {
             if (timerInterval) clearInterval(timerInterval);
-            
             timerInterval = setInterval(() => {
                 timeLeft--;
                 const timerTxt = document.getElementById('timer-txt');
                 timerTxt.innerText = timeLeft;
                 
-                // Включаем эффект паники за 5 секунд до конца
                 if (timeLeft <= 5) {
                     timerTxt.parentElement.classList.add('timer-danger');
+                    playSound('tick'); // Пищим, если дедлайн горит
                 } else {
                     timerTxt.parentElement.classList.remove('timer-danger');
                 }
@@ -138,16 +212,13 @@
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     showToast("⏰ Дедлайн провален! Район перестроен.", "#e74c3c");
-                    setTimeout(() => {
-                        generateLevel();
-                        draw();
-                    }, 8000);
+                    setTimeout(() => { generateLevel(); draw(); }, 1500);
                 }
             }, 1000);
         }
 
         function resetTimer() {
-            timeLeft = 15; // Возвращаем 15 секунд на старте
+            timeLeft = 15; 
             const timerTxt = document.getElementById('timer-txt');
             if (timerTxt) {
                 timerTxt.innerText = timeLeft;
@@ -164,12 +235,7 @@
                 for (let x = 0; x < 10; x++) {
                     const cell = document.createElement('div');
                     let type = currentMap[y][x];
-                    if (type === 'M' || type === 'F') {
-                        cell.className = 'cell E'; 
-                    } else {
-                        cell.className = 'cell ' + type;
-                    }
-                    
+                    cell.className = 'cell ' + (type === 'M' || type === 'F' ? 'E' : type);
                     cell.onclick = () => breakWall(x, y);
                     
                     if (x === p.x && y === p.y) {
@@ -198,6 +264,7 @@
                     currentMap[y][x] = 'E';
                     showToast("🧱 Квартал расчищен под дорогу!");
                     draw();
+                    saveDataToDB();
                 } else {
                     showToast("❌ Купите Мастер-Ключ в автосалоне ниже!", "#e74c3c");
                 }
@@ -209,9 +276,7 @@
             toast.innerText = text;
             toast.style.background = color;
             toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 1500);
+            setTimeout(() => { toast.classList.remove('show'); }, 1500);
         }
 
         function move(dx, dy) {
@@ -221,19 +286,24 @@
             if (currentMap[ny] && currentMap[ny][nx] !== 'W' && currentMap[ny][nx] !== 'T') {
                 p.x = nx;
                 p.y = ny;
+                playSound('step'); // Звук движения курьера
 
                 if (currentMap[p.y][p.x] === 'M') {
                     wallet += 50;
                     currentMap[p.y][p.x] = 'E';
                     document.getElementById('money-txt').innerText = wallet;
                     showToast("💵 Посылка подобрана! +50$");
+                    playSound('coin'); // Шелест денег
+                    saveDataToDB();
                 }
 
                 if (currentMap[p.y][p.x] === 'F') {
                     wallet += 100;
                     document.getElementById('money-txt').innerText = wallet;
                     showToast("🏁 Доставили вовремя! +100$");
+                    playSound('coin');
                     generateLevel();
+                    saveDataToDB();
                 }
                 draw();
             }
@@ -246,6 +316,7 @@
                 document.getElementById('money-txt').innerText = wallet;
                 showToast("🔑 Получен допуск к сносу преград!");
                 updateShop();
+                saveDataToDB();
             }
         }
 
@@ -258,23 +329,24 @@
                 document.getElementById(`buy-${id}`).disabled = true;
                 showToast("💼 Имидж курьера обновлен!");
                 draw();
-            }
-        }
+        saveDataToDB();
+    }
+}
 
-        function updateShop() {
-            document.getElementById('buy-tool').disabled = wallet < 50;
-            document.getElementById('buy-skin').disabled = wallet < 150 && document.getElementById('buy-skin').innerText !== "Одето";
-        }
+function updateShop() {
+    document.getElementById('buy-tool').disabled = wallet < 50;
+    document.getElementById('buy-skin').disabled = wallet < 150 && document.getElementById('buy-skin').innerText !== "Одето";
+}
 
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'ц') move(0, -1);
-            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'ы') move(0, 1);
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') move(-1, 0);
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') move(1, 0);
-        });
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'ц') move(0, -1);
+    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'ы') move(0, 1);
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') move(-1, 0);
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') move(1, 0);
+});
 
-        generateLevel();
-        draw();
-    </script>
-</body>
-</html>
+// Каждые 5 секунд автоматически бэкапим баланс на всякий случай
+setInterval(saveDataToDB, 2000);
+
+// Старт игры через подгрузку из БД
+loadDataFromDB();
