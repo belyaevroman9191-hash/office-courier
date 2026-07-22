@@ -64,7 +64,6 @@
     </div>
 
     <script>
-        // Безопасная инициализация Telegram
         const tg = window.Telegram?.WebApp;
         if (tg && typeof tg.expand === 'function') {
             tg.expand();
@@ -93,6 +92,7 @@
                 }
                 currentMap.push(row);
             }
+            // Точечно настраиваем старт и финиш в массиве карт
             currentMap[1][1] = 'E';
             currentMap[8][8] = 'F';
             p = { x: 1, y: 1 };
