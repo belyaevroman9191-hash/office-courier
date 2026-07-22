@@ -13,34 +13,27 @@
         .timer-container { font-size: 14px; color: #e74c3c; background: rgba(231, 76, 60, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(231, 76, 60, 0.3); }
         .timer-danger { animation: blink 0.5s infinite alternate; color: #ff4757; font-weight: bold; }
         @keyframes blink { from { opacity: 1; } to { opacity: 0.4; } }
-
-        .restart-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; transition: background 0.2s, transform 0.1s; box-shadow: 0 2px #2980b9; }
-        .restart-btn:active { transform: translateY(2px); box-shadow: 0 0 #2980b9; }
-
-        #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); border: 2px solid #34495e; }
-        .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: filter 0.2s; }
+        .restart-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
         
+        #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); border: 2px solid #34495e; }
+        .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
         .W { background: #7f8c8d; position: relative; } 
         .W::after { content: "🏢"; font-size: 16px; position: absolute; }
         .E { background: #34495e; border: 1px solid #2c3e50; } 
         .T { background: #27ae60; position: relative; } 
         .T::after { content: "🌳"; font-size: 16px; position: absolute; }
-
-        #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; white-space: nowrap; }
+        
+        #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.4s; z-index: 1000; font-size: 13px; }
         #toast.show { top: 20px; }
-
         .controls { display: grid; grid-template-columns: repeat(3, 62px); grid-template-rows: repeat(2, 62px); gap: 10px; justify-content: center; margin-top: 12px; }
-        .btn { background: #2c3e50; color: white; border: none; border-radius: 14px; font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px #1a252f; transition: all 0.1s; border: 1px solid #34495e; }
-        .btn:active { transform: translateY(4px); box-shadow: 0 0 #1a252f; background: #1a252f; }
+        .btn { background: #2c3e50; color: white; border: none; border-radius: 14px; font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px #1a252f; }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 #1a252f; }
         .btn-up { grid-column: 2; } .btn-left { grid-column: 1; grid-row: 2; } .btn-down { grid-column: 2; grid-row: 2; } .btn-right { grid-column: 3; grid-row: 2; }
-
-        .shop-container { background: #25252b; width: 300px; margin: 15px auto; padding: 12px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); text-align: left; border: 1px solid #3a3a45; }
-        .shop-title { font-size: 15px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #3a3a45; padding-bottom: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .shop-container { background: #25252b; width: 300px; margin: 15px auto; padding: 12px; border-radius: 10px; text-align: left; border: 1px solid #3a3a45; }
+        .shop-title { font-size: 15px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #3a3a45; padding-bottom: 6px; margin-bottom: 10px; }
         .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #3a3a45; }
-        .shop-item:last-child { border-bottom: none; }
-        .item-info { font-size: 13px; } .item-name { font-weight: bold; color: #fff; } .item-desc { font-size: 11px; color: #8a8a9e; margin-top: 2px; }
-        .buy-btn { background: #2ecc71; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; box-shadow: 0 2px #27ae60; }
-        .buy-btn:disabled { background: #454552; color: #7a7a8a; cursor: not-allowed; box-shadow: none; }
+        .buy-btn { background: #2ecc71; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .buy-btn:disabled { background: #454552; color: #7a7a8a; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -65,16 +58,16 @@
     <div class="shop-container">
         <div class="shop-title">🏪 Автосалон и Снаряжение</div>
         <div class="shop-item">
-            <div class="item-info">
-                <div class="item-name">🔑 Мастер-Ключ (Пропуск)</div>
-                <div class="item-desc">Снос здания кликом (открывает тупик)</div>
+            <div>
+                <div style="font-weight:bold;">🔑 Мастер-Ключ</div>
+                <div style="font-size:11px; color:#aaa;">Снос здания кликом</div>
             </div>
             <button class="buy-btn" id="buy-tool" onclick="buyTool()">50$</button>
         </div>
         <div class="shop-item">
-            <div class="item-info">
-                <div class="item-name">🏃‍♂️ Быстрый Курьер</div>
-                <div class="item-desc">Сменить транспорт на бег пешком</div>
+            <div>
+                <div style="font-weight:bold;">🏃‍♂️ Быстрый Курьер</div>
+                <div style="font-size:11px; color:#aaa;">Сменить транспорт на бег</div>
             </div>
             <button class="buy-btn" id="buy-skin" onclick="buyItem('skin', 150, '🏃‍♂️')">150$</button>
         </div>
@@ -91,96 +84,50 @@
         let timeLeft = 15; 
         let timerInterval = null; 
 
-        // Инициализация аудио
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
-
-        function initAudio() {
-            if (!audioCtx) audioCtx = new AudioCtx();
-        }
+        function initAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
 
         function playSound(type) {
             initAudio();
             if (!audioCtx) return;
-            
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-
-            if (type === 'step') { 
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(120, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.08);
+            if (type === 'step') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(120, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.08);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.08);
-            } else if (type === 'coin') { 
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.12);
+            } else if (type === 'coin') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(900, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.12);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.12);
-            } else if (type === 'tick') { 
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+            } else if (type === 'tick') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.05);
             }
         }
 
-        // Загрузка локальных данных
-        function loadLocalData() {
-            wallet = parseInt(localStorage.getItem('courier_wallet')) || 0;
-            toolsCount = parseInt(localStorage.getItem('courier_tools')) || 0;
-            currentSkin = localStorage.getItem('courier_skin') || '🚴';
-            
-            document.getElementById('money-txt').innerText = wallet;
-            
-            if (localStorage.getItem('courier_skin_bought') === 'true') {
-                const skinBtn = document.getElementById('buy-skin');
-                if (skinBtn) { skinBtn.innerText = "Одето"; skinBtn.disabled = true; }
-            }
-            
-            generateLevel();
-            draw();
-        }
+        // ЖЕСТКАЯ, ОПТИМИЗИРОВАННАЯ КАРТА ГОРОДА (Защита от сбоев чтения undefined)
+        const fixedMap = [
+            ['W','W','W','W','W','W','W','W','W','W'],
+            ['W','E','M','E','T','E','E','M','E','W'],
+            ['W','E','W','W','E','W','W','E','W','W'],
+            ['W','M','E','E','E','E','T','E','E','W'],
+            ['W','W','T','W','W','E','W','W','M','W'],
+            ['W','E','E','E','M','E','E','T','E','W'],
+            ['W','E','W','W','E','W','W','E','W','W'],
+            ['W','M','E','T','E','E','M','E','E','W'],
+            ['W','E','E','E','E','T','E','E','F','W'],
+            ['W','W','W','W','W','W','W','W','W','W']
+        ];
 
-        function saveLocalData() {
-            localStorage.setItem('courier_wallet', wallet);
-            localStorage.setItem('courier_tools', toolsCount);
-            localStorage.setItem('courier_skin', currentSkin);
-        }
-
-        // ИСПРАВЛЕННАЯ ГЕНЕРАЦИЯ КАРТЫ ГОРОДА
         function generateLevel() {
-            currentMap = [];
-            for (let y = 0; y < 10; y++) {
-                let row = [];
-                for (let x = 0; x < 10; x++) {
-                    if (y === 0 || y === 9 || x === 0 || x === 9) {
-                        row.push('W');
-                    } else {
-                        let rand = Math.random();
-                        if (rand < 0.17 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
-                            row.push('W'); 
-                        } else if (rand >= 0.17 && rand < 0.24 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
-                            row.push('T'); 
-                        } else {
-                            row.push(Math.random() < 0.14 && !(x === 1 && y === 1) && !(x === 8 && y === 8) ? 'M' : 'E');
-                        }
-                    }
-                }
-                currentMap.push(row);
-            }
-            
-            // Задаем точки старта и финиша строго через индексы массива
-            currentMap[1][1] = 'E';
-            currentMap[8][8] = 'F';
+            currentMap = JSON.parse(JSON.stringify(fixedMap));
             p = { x: 1, y: 1 };
-            resetTimer(); 
+            resetTimer();
         }
 
         function startTimer() {
@@ -192,22 +139,21 @@
                     timerTxt.innerText = timeLeft;
                     if (timeLeft <= 5) {
                         timerTxt.parentElement.classList.add('timer-danger');
-                        playSound('tick'); 
+                        playSound('tick');
                     } else {
                         timerTxt.parentElement.classList.remove('timer-danger');
                     }
                 }
-
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    showToast("⏰ Дедлайн провален! Район перестроен.", "#e74c3c");
-                    setTimeout(() => { generateLevel(); draw(); }, 1500);
+                    showToast("⏰ Дедлайн провален! Перезапуск района.", "#e74c3c");
+                    setTimeout(() => { generateLevel(); draw(); }, 1200);
                 }
             }, 1000);
         }
 
         function resetTimer() {
-            timeLeft = 15; 
+            timeLeft = 15;
             const timerTxt = document.getElementById('timer-txt');
             if (timerTxt) {
                 timerTxt.innerText = timeLeft;
@@ -218,22 +164,19 @@
 
         function draw() {
             const container = document.getElementById('maze-grid');
-            if (!container || !currentMap || currentMap.length === 0) return;
-            
+            if (!container) return;
             container.innerHTML = '';
-            
             for (let y = 0; y < 10; y++) {
                 for (let x = 0; x < 10; x++) {
                     const cell = document.createElement('div');
                     let type = currentMap[y][x];
                     cell.className = 'cell ' + (type === 'M' || type === 'F' ? 'E' : type);
                     cell.onclick = () => breakWall(x, y);
-                    
                     if (x === p.x && y === p.y) {
                         cell.innerText = currentSkin;
-                    } else if (currentMap[y][x] === 'M') {
+                    } else if (type === 'M') {
                         cell.innerText = '💵';
-                    } else if (currentMap[y][x] === 'F') {
+                    } else if (type === 'F') {
                         cell.innerText = '🏁';
                     }
                     container.appendChild(cell);
@@ -245,7 +188,7 @@
         function triggerRestart() {
             generateLevel();
             draw();
-            showToast("🚕 Сменили район! Время обновлено.", "#3498db");
+            showToast("🚕 Сменили район города!", "#3498db");
         }
 
         function breakWall(x, y) {
@@ -253,11 +196,11 @@
                 if (toolsCount > 0) {
                     toolsCount--;
                     currentMap[y][x] = 'E';
-                    showToast("🧱 Квартал расчищен под дорогу!");
+                    showToast("🧱 Квартал расчищен!");
                     draw();
                     saveLocalData();
                 } else {
-                    showToast("❌ Купите Мастер-Ключ в автосалоне ниже!", "#e74c3c");
+                    showToast("❌ Нужен Мастер-Ключ!", "#e74c3c");
                 }
             }
         }
@@ -265,38 +208,27 @@
         function showToast(text, color = "#2ecc71") {
             const toast = document.getElementById('toast');
             if (toast) {
-                toast.innerText = text;
-                toast.style.background = color;
-                toast.classList.add('show');
-                setTimeout(() => { toast.classList.remove('show'); }, 1500);
+                toast.innerText = text; toast.style.background = color; toast.classList.add('show');
+                setTimeout(() => { toast.classList.remove('show'); }, 1200);
             }
         }
 
         function move(dx, dy) {
-            let nx = p.x + dx;
-            let ny = p.y + dy;
-
+            let nx = p.x + dx; let ny = p.y + dy;
             if (currentMap[ny] && currentMap[ny][nx] !== 'W' && currentMap[ny][nx] !== 'T') {
-                p.x = nx;
-                p.y = ny;
-                playSound('step'); 
-
+                p.x = nx; p.y = ny;
+                playSound('step');
                 if (currentMap[p.y][p.x] === 'M') {
-                    wallet += 50;
-                    currentMap[p.y][p.x] = 'E';
+                    wallet += 50; currentMap[p.y][p.x] = 'E';
                     document.getElementById('money-txt').innerText = wallet;
-                    showToast("💵 Посылка подобрана! +50$");
-                    playSound('coin'); 
+                    showToast("💵 Посылка подобрана! +50$"); playSound('coin');
                     saveLocalData();
                 }
-
                 if (currentMap[p.y][p.x] === 'F') {
-                    wallet += 100;
-                    document.getElementById('money-txt').innerText = wallet;
-                    showToast("🏁 Доставили вовремя! +100$");
-                    playSound('coin');
+                    wallet += 100; document.getElementById('money-txt').innerText = wallet;
+                    showToast("🏁 Доставили вовремя! +100$"); playSound('coin');
                     generateLevel();
-                    saveDataToDB();
+                    saveLocalData();
                 }
                 draw();
             }
@@ -304,34 +236,46 @@
 
         function buyTool() {
             if (wallet >= 50) {
-                wallet -= 50;
-                toolsCount++;
+                wallet -= 50; toolsCount++;
                 document.getElementById('money-txt').innerText = wallet;
-                showToast("🔑 Получен допуск к сносу преград!");
-                updateShop();
-                saveLocalData();
+                showToast("🔑 Получен Мастер-Ключ!");
+                updateShop(); saveLocalData();
             }
         }
 
         function buyItem(id, price, emoji) {
             if (wallet >= price) {
-                wallet -= price;
-                document.getElementById('money-txt').innerText = wallet;
-                currentSkin = emoji;
-                localStorage.setItem('courier_skin_bought', 'true');
+                wallet -= price; document.getElementById('money-txt').innerText = wallet;
+                currentSkin = emoji; localStorage.setItem('courier_skin_bought', 'true');
                 document.getElementById(`buy-${id}`).innerText = "Одето";
                 document.getElementById(`buy-${id}`).disabled = true;
                 showToast("💼 Имидж курьера обновлен!");
-                draw();
-                saveLocalData();
+                draw(); saveLocalData();
             }
         }
 
         function updateShop() {
-            const buyToolBtn = document.getElementById('buy-tool');
-            const buySkinBtn = document.getElementById('buy-skin');
-            if (buyToolBtn) buyToolBtn.disabled = wallet < 50;
-            if (buySkinBtn) buySkinBtn.disabled = wallet < 150 && buySkinBtn.innerText !== "Одето";
+            const b1 = document.getElementById('buy-tool'); const b2 = document.getElementById('buy-skin');
+            if (b1) b1.disabled = wallet < 50;
+            if (b2) b2.disabled = wallet < 150 && b2.innerText !== "Одето";
+        }
+
+        function loadLocalData() {
+            wallet = parseInt(localStorage.getItem('courier_wallet')) || 0;
+            toolsCount = parseInt(localStorage.getItem('courier_tools')) || 0;
+            currentSkin = localStorage.getItem('courier_skin') || '🚴';
+            document.getElementById('money-txt').innerText = wallet;
+            if (localStorage.getItem('courier_skin_bought') === 'true') {
+                const b2 = document.getElementById('buy-skin'); if (b2) { b2.innerText = "Одето"; b2.disabled = true; }
+            }
+            generateLevel();
+            draw();
+        }
+
+        function saveLocalData() {
+            localStorage.setItem('courier_wallet', wallet);
+            localStorage.setItem('courier_tools', toolsCount);
+            localStorage.setItem('courier_skin', currentSkin);
         }
 
         window.addEventListener('keydown', (e) => {
@@ -341,12 +285,8 @@
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') move(1, 0);
         });
 
-        // Автобэкап каждые 2 секунды в память браузера
         setInterval(saveLocalData, 2000);
-
-        // Старт игры
         loadLocalData();
     </script>
 </body>
 </html>
-
