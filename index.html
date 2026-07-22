@@ -91,6 +91,7 @@
         let timeLeft = 15; 
         let timerInterval = null; 
 
+        // Инициализация аудио
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
 
@@ -130,6 +131,7 @@
             }
         }
 
+        // Загрузка локальных данных
         function loadLocalData() {
             wallet = parseInt(localStorage.getItem('courier_wallet')) || 0;
             toolsCount = parseInt(localStorage.getItem('courier_tools')) || 0;
@@ -152,6 +154,7 @@
             localStorage.setItem('courier_skin', currentSkin);
         }
 
+        // ИСПРАВЛЕННАЯ ГЕНЕРАЦИЯ КАРТЫ ГОРОДА
         function generateLevel() {
             currentMap = [];
             for (let y = 0; y < 10; y++) {
@@ -172,8 +175,10 @@
                 }
                 currentMap.push(row);
             }
-            currentMap = 'E';
-            currentMap = 'F';
+            
+            // Задаем точки старта и финиша строго через индексы массива
+            currentMap[1][1] = 'E';
+            currentMap[8][8] = 'F';
             p = { x: 1, y: 1 };
             resetTimer(); 
         }
@@ -213,6 +218,8 @@
 
         function draw() {
             const container = document.getElementById('maze-grid');
+            if (!container || !currentMap || currentMap.length === 0) return;
+            
             container.innerHTML = '';
             
             for (let y = 0; y < 10; y++) {
@@ -289,7 +296,7 @@
                     showToast("🏁 Доставили вовремя! +100$");
                     playSound('coin');
                     generateLevel();
-                    saveLocalData();
+                    saveDataToDB();
                 }
                 draw();
             }
@@ -332,9 +339,14 @@
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'ы') move(0, 1);
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') move(-1, 0);
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') move(1, 0);
-            });
+        });
+
+        // Автобэкап каждые 2 секунды в память браузера
         setInterval(saveLocalData, 2000);
+
+        // Старт игры
         loadLocalData();
-            </script>
-            </body>
-            </html>
+    </script>
+</body>
+</html>
+
