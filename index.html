@@ -10,19 +10,16 @@
         .ui-panel { background: #2a2a35; padding: 10px; margin: 0 auto 10px auto; width: 300px; border-radius: 8px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .money { color: #f1c40f; } .level { color: #3498db; }
         
-        /* Сетка лабиринта на чистом CSS */
         #maze-grid { display: grid; grid-template-columns: repeat(10, 30px); grid-template-rows: repeat(10, 30px); gap: 1px; justify-content: center; margin: 10px auto; background: #111116; padding: 5px; border-radius: 8px; width: 310px; }
         .cell { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 18px; border-radius: 3px; }
-        .W { background: #34495e; } /* Стены */
-        .E { background: #1a1a20; } /* Пол */
+        .W { background: #34495e; } 
+        .E { background: #1a1a20; } 
 
-        /* Кнопки */
         .controls { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 60px); gap: 8px; justify-content: center; margin-top: 10px; }
         .btn { background: #34495e; color: white; border: none; border-radius: 12px; font-size: 22px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px #2c3e50; }
         .btn:active { transform: translateY(4px); box-shadow: 0 0 #2c3e50; }
         .btn-up { grid-column: 2; } .btn-left { grid-column: 1; grid-row: 2; } .btn-down { grid-column: 2; grid-row: 2; } .btn-right { grid-column: 3; grid-row: 2; }
 
-        /* Магазин */
         .shop-container { background: #2a2a35; width: 300px; margin: 15px auto; padding: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align: left; }
         .shop-title { font-size: 16px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 10px; }
         .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333; }
@@ -39,7 +36,6 @@
         <div>📍 Офис: <span id="level-txt" class="level">1</span></div>
     </div>
 
-    <!-- Игровое поле -->
     <div id="maze-grid"></div>
 
     <div class="controls">
@@ -74,7 +70,7 @@
         let wallet = 0;
         let level = 1;
         let p = { x: 1, y: 1 };
-        let currentSkin = '🚴'; // Скин по умолчанию, чтобы сразу отличался
+        let currentSkin = '🚴'; 
 
         const maps = {
             1: [
@@ -133,7 +129,7 @@
                     alert("Посылка доставлена! Заработок +100$");
                     wallet += 100;
                     document.getElementById('money-txt').innerText = wallet;
-                    currentMap = JSON.parse(JSON.stringify(maps[1])); // Сброс карты
+                    currentMap = JSON.parse(JSON.stringify(maps[1])); 
                     p = { x: 1, y: 1 };
                 }
                 draw();
