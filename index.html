@@ -8,13 +8,26 @@
     <script src="https://jsdelivr.net"></script>
     <style>
         body { margin: 0; padding: 0; background-color: #1e1e24; font-family: sans-serif; color: #fff; text-align: center; user-select: none; }
-        #game-container { margin: 10px auto; display: flex; justify-content: center; }
         .ui-panel { background: #2a2a35; padding: 10px; margin: 10px auto; width: 320px; border-radius: 8px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .money { color: #f1c40f; } .level { color: #3498db; }
-        .controls { display: grid; grid-template-columns: repeat(3, 65px); grid-template-rows: repeat(2, 65px); gap: 10px; justify-content: center; margin-top: 10px; }
-        .btn { background: #34495e; color: white; border: none; border-radius: 12px; font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px #2c3e50; }
+        #game-container { margin: 5px auto; display: flex; justify-content: center; }
+        
+        /* Кнопки управления */
+        .controls { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 60px); gap: 8px; justify-content: center; margin-top: 5px; }
+        .btn { background: #34495e; color: white; border: none; border-radius: 12px; font-size: 22px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px #2c3e50; }
         .btn:active { transform: translateY(4px); box-shadow: 0 0 #2c3e50; }
         .btn-up { grid-column: 2; } .btn-left { grid-column: 1; grid-row: 2; } .btn-down { grid-column: 2; grid-row: 2; } .btn-right { grid-column: 3; grid-row: 2; }
+
+        /* Стилизация нового магазина */
+        .shop-container { background: #2a2a35; width: 320px; margin: 15px auto; padding: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align: left; }
+        .shop-title { font-size: 16px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 10px; }
+        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333; }
+        .shop-item:last-child { border-bottom: none; }
+        .item-info { font-size: 14px; }
+        .item-name { font-weight: bold; }
+        .item-desc { font-size: 11px; color: #aaa; }
+        .buy-btn { background: #2ecc71; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .buy-btn:disabled { background: #555; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -33,6 +46,27 @@
         <button class="btn btn-right" id="right-btn">▶</button>
     </div>
 
+    <!-- Раздел магазина улучшений -->
+    <div class="shop-container">
+        <div class="shop-title">🕳️ Магазин курьера</div>
+        
+        <div class="shop-item">
+            <div class="item-info">
+                <div class="item-name">👟 Брендовые Кроссовки</div>
+                <div class="item-desc">Визуальный скин для бега</div>
+            </div>
+            <button class="buy-btn" id="buy-skin" onclick="buyItem('skin', 150, '🏃')">150$</button>
+        </div>
+
+        <div class="shop-item">
+            <div class="item-info">
+                <div class="item-name">🛴 Скоростной Самокат</div>
+                <div class="item-desc">Новый транспорт вместо ходьбы</div>
+            </div>
+            <button class="buy-btn" id="buy-scooter" onclick="buyItem('scooter', 300, '🛴')">300$</button>
+        </div>
+    </div>
+
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
@@ -43,9 +77,9 @@
         let sceneContext;
         let pGrid = { x: 1, y: 1 };
         const TILE_SIZE = 32;
+        let currentSkin = '🏃‍♂️'; // Базовый скин персонажа
 
-        // Карта лабиринта, защищенная от искажений редактора
-        const mazeGrid = JSON.parse('[[1,1,1,1,1,1,1,1,1,1],[1,0,0,1,2,0,0,0,2,1],[1,1,0,1,0,1,1,1,0,1],[1,0,0,0,0,0,0,1,0,1],[1,0,1,1,1,1,0,1,0,1],[1,2,1,0,0,0,0,0,0,1],[1,0,1,0,1,1,1,1,0,1],[1,0,0,0,1,2,0,0,0,1],[1,1,1,0,0,0,1,0,3,1],[1,1,1,1,1,1,1,1,1,1]]');
+        const mazeGrid = JSON.parse('[["W","W","W","W","W","W","W","W","W","W"],["W","E","E","W","M","E","E","E","M","W"],["W","W","E","W","E","W","W","W","E","W"],["W","E","E","E","E","E","E","W","E","W"],["W","E","W","W","W","W","E","W","E","W"],["W","M","W","E","E","E","E","E","E","W"],["W","E","W","E","W","W","W","W","E","W"],["W","E","E","E","W","M","E","E","E","W"],["W","W","W","E","E","E","W","E","F","W"],["W","W","W","W","W","W","W","W","W","W"]]');
 
         const config = {
             type: Phaser.AUTO,
@@ -67,11 +101,11 @@
                     let x = c * TILE_SIZE + TILE_SIZE / 2;
                     let y = r * TILE_SIZE + TILE_SIZE / 2;
 
-                    if (tileType === 1) {
+                    if (tileType === "W") {
                         this.add.rectangle(x, y, TILE_SIZE - 2, TILE_SIZE - 2, 0x34495e);
-                    } else if (tileType === 2) {
+                    } else if (tileType === "M") {
                         this.add.text(x, y, '💵', { fontSize: '18px' }).setOrigin(0.5);
-                    } else if (tileType === 3) {
+                    } else if (tileType === "F") {
                         this.add.text(x, y, '🏢', { fontSize: '18px' }).setOrigin(0.5);
                     }
                 }
@@ -80,7 +114,7 @@
             player = this.add.text(
                 pGrid.x * TILE_SIZE + TILE_SIZE / 2, 
                 pGrid.y * TILE_SIZE + TILE_SIZE / 2, 
-                '🏃‍♂️', 
+                currentSkin, 
                 { fontSize: '20px' }
             ).setOrigin(0.5);
 
@@ -90,6 +124,8 @@
             document.getElementById('left-btn').onclick = () => moveCourier(-1, 0);
             document.getElementById('down-btn').onclick = () => moveCourier(0, 1);
             document.getElementById('right-btn').onclick = () => moveCourier(1, 0);
+            
+            updateShopButtons();
         }
 
         function update() {
@@ -103,17 +139,18 @@
             let nX = pGrid.x + dx;
             let nY = pGrid.y + dy;
 
-            if (mazeGrid[nY] && mazeGrid[nY][nX] !== 1) {
+            if (mazeGrid[nY] && mazeGrid[nY][nX] !== "W") {
                 pGrid.x = nX;
                 pGrid.y = nY;
 
                 player.x = pGrid.x * TILE_SIZE + TILE_SIZE / 2;
                 player.y = pGrid.y * TILE_SIZE + TILE_SIZE / 2;
 
-                if (mazeGrid[pGrid.y][pGrid.x] === 2) {
+                if (mazeGrid[pGrid.y][pGrid.x] === "M") {
                     wallet += 50;
-                    mazeGrid[pGrid.y][pGrid.x] = 0;
+                    mazeGrid[pGrid.y][pGrid.x] = "E";
                     document.getElementById('money-txt').innerText = wallet;
+                    updateShopButtons();
                     
                     let children = sceneContext.children.list;
                     for (let i = 0; i < children.length; i++) {
@@ -124,13 +161,40 @@
                     }
                 }
 
-                if (mazeGrid[pGrid.y][pGrid.x] === 3) {
+                if (mazeGrid[pGrid.y][pGrid.x] === "F") {
                     alert("Посылка доставлена! Вы заработали +100$");
                     wallet += 100;
                     document.getElementById('money-txt').innerText = wallet;
-                    location.reload();
+                    updateShopButtons();
+                    
+                    pGrid = { x: 1, y: 1 };
+                    player.x = pGrid.x * TILE_SIZE + TILE_SIZE / 2;
+                    player.y = pGrid.y * TILE_SIZE + TILE_SIZE / 2;
                 }
             }
+        }
+
+        // Логика покупки предметов в магазине
+        function buyItem(id, price, emoji) {
+            if (wallet >= price) {
+                wallet -= price;
+                document.getElementById('money-txt').innerText = wallet;
+                currentSkin = emoji;
+                player.setText(currentSkin); // Мгновенно меняем визуальный значок игрока
+                
+                const btn = document.getElementById(`buy-${id}`);
+                btn.innerText = "Куплено";
+                btn.disabled = true;
+                updateShopButtons();
+            }
+        }
+
+        function updateShopButtons() {
+            const skinBtn = document.getElementById('buy-skin');
+            const scooterBtn = document.getElementById('buy-scooter');
+            
+            if (skinBtn && skinBtn.innerText !== "Куплено") skinBtn.disabled = wallet < 150;
+            if (scooterBtn && scooterBtn.innerText !== "Куплено") scooterBtn.disabled = wallet < 300;
         }
     </script>
 </body>
