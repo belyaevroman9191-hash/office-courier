@@ -83,10 +83,6 @@
         const tg = window.Telegram?.WebApp;
         if (tg && typeof tg.expand === 'function') tg.expand();
 
-        // АДРЕС ВАШЕГО СЕРВЕРА БАЗЫ ДАННЫХ ИЗ RENDER
-        const SERVER_URL = "https://onrender.com"; 
-        const userId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : "office_player_pc";
-
         let wallet = 0;
         let toolsCount = 0;
         let p = { x: 1, y: 1 };
@@ -95,7 +91,6 @@
         let timeLeft = 15; 
         let timerInterval = null; 
 
-        // Инициализация аудио
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
 
@@ -135,38 +130,26 @@
             }
         }
 
-        // ЗАГРУЗКА ИЗ БД
-        async function loadDataFromDB() {
-            try {
-                const res = await fetch(`${SERVER_URL}/get_player/${userId}`);
-                const data = await res.json();
-                wallet = data.coins || 0;
-                toolsCount = data.item1_count || 0;
-                document.getElementById('money-txt').innerText = wallet;
-                document.getElementById('tools-txt').innerText = toolsCount;
-            } catch (e) {
-                console.log("Сервер недоступен, играем автономно");
+        function loadLocalData() {
+            wallet = parseInt(localStorage.getItem('courier_wallet')) || 0;
+            toolsCount = parseInt(localStorage.getItem('courier_tools')) || 0;
+            currentSkin = localStorage.getItem('courier_skin') || '🚴';
+            
+            document.getElementById('money-txt').innerText = wallet;
+            
+            if (localStorage.getItem('courier_skin_bought') === 'true') {
+                const skinBtn = document.getElementById('buy-skin');
+                if (skinBtn) { skinBtn.innerText = "Одето"; skinBtn.disabled = true; }
             }
+            
             generateLevel();
             draw();
         }
 
-        // СОХРАНЕНИЕ В БД
-        async function saveDataToDB() {
-            try {
-                await fetch(`${SERVER_URL}/save_player`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        coins: wallet,
-                        cps: 0,
-                        item1_count: toolsCount
-                    })
-                });
-            } catch (e) { 
-                console.log("Ошибка сохранения в БД"); 
-            }
+        function saveLocalData() {
+            localStorage.setItem('courier_wallet', wallet);
+            localStorage.setItem('courier_tools', toolsCount);
+            localStorage.setItem('courier_skin', currentSkin);
         }
 
         function generateLevel() {
@@ -189,8 +172,8 @@
                 }
                 currentMap.push(row);
             }
-            currentMap[1][1] = 'E';
-            currentMap[8][8] = 'F';
+            currentMap = 'E';
+            currentMap = 'F';
             p = { x: 1, y: 1 };
             resetTimer(); 
         }
@@ -263,10 +246,9 @@
                 if (toolsCount > 0) {
                     toolsCount--;
                     currentMap[y][x] = 'E';
-                    document.getElementById('tools-txt').innerText = toolsCount;
                     showToast("🧱 Квартал расчищен под дорогу!");
                     draw();
-                    saveDataToDB();
+                    saveLocalData();
                 } else {
                     showToast("❌ Купите Мастер-Ключ в автосалоне ниже!", "#e74c3c");
                 }
@@ -298,7 +280,7 @@
                     document.getElementById('money-txt').innerText = wallet;
                     showToast("💵 Посылка подобрана! +50$");
                     playSound('coin'); 
-                    saveDataToDB();
+                    saveLocalData();
                 }
 
                 if (currentMap[p.y][p.x] === 'F') {
@@ -307,7 +289,7 @@
                     showToast("🏁 Доставили вовремя! +100$");
                     playSound('coin');
                     generateLevel();
-                    saveDataToDB();
+                    saveLocalData();
                 }
                 draw();
             }
@@ -318,10 +300,9 @@
                 wallet -= 50;
                 toolsCount++;
                 document.getElementById('money-txt').innerText = wallet;
-                document.getElementById('tools-txt').innerText = toolsCount;
                 showToast("🔑 Получен допуск к сносу преград!");
                 updateShop();
-                saveDataToDB();
+                saveLocalData();
             }
         }
 
@@ -330,11 +311,12 @@
                 wallet -= price;
                 document.getElementById('money-txt').innerText = wallet;
                 currentSkin = emoji;
+                localStorage.setItem('courier_skin_bought', 'true');
                 document.getElementById(`buy-${id}`).innerText = "Одето";
                 document.getElementById(`buy-${id}`).disabled = true;
                 showToast("💼 Имидж курьера обновлен!");
                 draw();
-                saveDataToDB();
+                saveLocalData();
             }
         }
 
@@ -350,13 +332,9 @@
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'ы') move(0, 1);
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') move(-1, 0);
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') move(1, 0);
-        });
-
-        // Автобэкап каждые 2 секунды
-        setInterval(saveDataToDB, 4000);
-
-        // Старт игры
-        loadDataFromDB();
-    </script>
-</body>
-</html>
+            });
+        setInterval(saveLocalData, 2000);
+        loadLocalData();
+            </script>
+            </body>
+            </html>
