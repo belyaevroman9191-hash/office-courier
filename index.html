@@ -10,18 +10,20 @@
         .ui-panel { background: #25252b; padding: 12px; margin: 0 auto 10px auto; width: 300px; border-radius: 10px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.4); align-items: center; border: 1px solid #3a3a45; }
         .money { color: #f1c40f; text-shadow: 0 0 5px rgba(241,196,15,0.3); }
         
-        .restart-btn { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; transition: background 0.2s, transform 0.1s; box-shadow: 0 2px #c0392b; }
-        .restart-btn:active { transform: translateY(2px); box-shadow: 0 0 #c0392b; }
+        .timer-container { font-size: 14px; color: #e74c3c; background: rgba(231, 76, 60, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(231, 76, 60, 0.3); }
+        .timer-danger { animation: blink 0.5s infinite alternate; color: #ff4757; font-weight: bold; }
+        @keyframes blink { from { opacity: 1; } to { opacity: 0.4; } }
 
-        /* Карта города */
+        .restart-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; transition: background 0.2s, transform 0.1s; box-shadow: 0 2px #2980b9; }
+        .restart-btn:active { transform: translateY(2px); box-shadow: 0 0 #2980b9; }
+
         #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); border: 2px solid #34495e; }
         .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: filter 0.2s; }
         
-        /* Текстуры города */
-        .W { background: #7f8c8d; position: relative; } /* Небоскребы / Дома */
+        .W { background: #7f8c8d; position: relative; } 
         .W::after { content: "🏢"; font-size: 16px; position: absolute; }
-        .E { background: #34495e; border: 1px solid #2c3e50; } /* Асфальтированная дорога */
-        .T { background: #27ae60; position: relative; } /* Городской Парк / Деревья (тоже преграда) */
+        .E { background: #34495e; border: 1px solid #2c3e50; } 
+        .T { background: #27ae60; position: relative; } 
         .T::after { content: "🌳"; font-size: 16px; position: absolute; }
 
         #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; white-space: nowrap; }
@@ -47,8 +49,8 @@
 
     <div class="ui-panel">
         <div>💵 Выручка: <span id="money-txt" class="money">0</span>$</div>
-        <div>🔧 Пропуска: <span id="tools-txt" style="color: #e67e22;">0</span> шт.</div>
-        <button class="restart-btn" onclick="triggerRestart()">🚕 Сменить район</button>
+        <div class="timer-container">⏱️ <span id="timer-txt">15</span>с</div>
+        <button class="restart-btn" onclick="triggerRestart()">🚕 Район</button>
     </div>
 
     <div id="maze-grid"></div>
@@ -86,34 +88,72 @@
         let p = { x: 1, y: 1 };
         let currentSkin = '🚴'; 
         let currentMap = [];
+        
+        let timeLeft = 15; // Таймер на 15 секунд
+        let timerInterval = null; 
 
-        // Алгоритм генерации городской застройки
         function generateLevel() {
             currentMap = [];
             for (let y = 0; y < 10; y++) {
                 let row = [];
                 for (let x = 0; x < 10; x++) {
-                    // Внешние границы города (окружное шоссе)
                     if (y === 0 || y === 9 || x === 0 || x === 9) {
                         row.push('W');
                     } else {
                         let rand = Math.random();
-                        if (rand < 0.20 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
-                            row.push('W'); // Жилой дом
-                        } else if (rand >= 0.20 && rand < 0.28 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
-                            row.push('T'); // Городской парк с деревьями
+                        // Немного снизили плотность домов до 17% для лучшей проходимости за 15с
+                        if (rand < 0.17 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
+                            row.push('W'); 
+                        } else if (rand >= 0.17 && rand < 0.24 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
+                            row.push('T'); 
                         } else {
-                            // Раскидываем посылки (деньги) на дорогах
                             row.push(Math.random() < 0.14 && !(x === 1 && y === 1) && !(x === 8 && y === 8) ? 'M' : 'E');
                         }
                     }
                 }
                 currentMap.push(row);
             }
-            // Старт на свободной дороге, финиш - Центральный офис в углу карты
             currentMap[1][1] = 'E';
             currentMap[8][8] = 'F';
             p = { x: 1, y: 1 };
+            
+            resetTimer(); 
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const timerTxt = document.getElementById('timer-txt');
+                timerTxt.innerText = timeLeft;
+                
+                // Включаем эффект паники за 5 секунд до конца
+                if (timeLeft <= 5) {
+                    timerTxt.parentElement.classList.add('timer-danger');
+                } else {
+                    timerTxt.parentElement.classList.remove('timer-danger');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    showToast("⏰ Дедлайн провален! Район перестроен.", "#e74c3c");
+                    setTimeout(() => {
+                        generateLevel();
+                        draw();
+                    }, 8000);
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            timeLeft = 15; // Возвращаем 15 секунд на старте
+            const timerTxt = document.getElementById('timer-txt');
+            if (timerTxt) {
+                timerTxt.innerText = timeLeft;
+                timerTxt.parentElement.classList.remove('timer-danger');
+            }
+            startTimer();
         }
 
         function draw() {
@@ -123,11 +163,9 @@
             for (let y = 0; y < 10; y++) {
                 for (let x = 0; x < 10; x++) {
                     const cell = document.createElement('div');
-                    
-                    // Задаем текстуру в зависимости от типа городской зоны
                     let type = currentMap[y][x];
                     if (type === 'M' || type === 'F') {
-                        cell.className = 'cell E'; // Посылки и офис лежат на асфальте
+                        cell.className = 'cell E'; 
                     } else {
                         cell.className = 'cell ' + type;
                     }
@@ -150,16 +188,14 @@
         function triggerRestart() {
             generateLevel();
             draw();
-            showToast("🚕 Переезжаем в другой район города!", "#3498db");
+            showToast("🚕 Сменили район! Время обновлено.", "#3498db");
         }
 
         function breakWall(x, y) {
-            // Мастер-ключ сносит внутренние дома (W) или вырубает деревья (T)
             if ((currentMap[y][x] === 'W' || currentMap[y][x] === 'T') && x > 0 && x < 9 && y > 0 && y < 9) {
                 if (toolsCount > 0) {
                     toolsCount--;
                     currentMap[y][x] = 'E';
-                    document.getElementById('tools-txt').innerText = toolsCount;
                     showToast("🧱 Квартал расчищен под дорогу!");
                     draw();
                 } else {
@@ -175,14 +211,13 @@
             toast.classList.add('show');
             setTimeout(() => {
                 toast.classList.remove('show');
-            }, 2000);
+            }, 1500);
         }
 
         function move(dx, dy) {
             let nx = p.x + dx;
             let ny = p.y + dy;
 
-            // Курьер может ехать только по дорогам (тип E, M, F) и не может сквозь дома (W) и парки (T)
             if (currentMap[ny] && currentMap[ny][nx] !== 'W' && currentMap[ny][nx] !== 'T') {
                 p.x = nx;
                 p.y = ny;
@@ -197,7 +232,7 @@
                 if (currentMap[p.y][p.x] === 'F') {
                     wallet += 100;
                     document.getElementById('money-txt').innerText = wallet;
-                    showToast("🏁 Доставили в главный офис! +100$");
+                    showToast("🏁 Доставили вовремя! +100$");
                     generateLevel();
                 }
                 draw();
@@ -209,7 +244,6 @@
                 wallet -= 50;
                 toolsCount++;
                 document.getElementById('money-txt').innerText = wallet;
-                document.getElementById('tools-txt').innerText = toolsCount;
                 showToast("🔑 Получен допуск к сносу преград!");
                 updateShop();
             }
