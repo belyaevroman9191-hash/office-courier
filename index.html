@@ -7,7 +7,7 @@
     <script src="https://telegram.org"></script>
     <style>
         body { margin: 0; padding: 10px; background-color: #111114; font-family: 'Segoe UI', sans-serif; color: #fff; text-align: center; user-select: none; touch-action: none; }
-        .ui-panel { background: #1e1e24; padding: 12px; margin: 0 auto 5px auto; width: 310px; border-radius: 10px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.5); align-items: center; border: 1px solid #2e2e38; font-size: 13px; }
+        .ui-panel { background: #1e1e24; padding: 12px; margin: 0 auto 5px auto; width: 310px; border-radius: 10px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.5); align-items: center; border: 1px solid #2e2e38; font-size: 13px; flex-wrap: wrap; gap: 5px; }
         .money { color: #f1c40f; text-shadow: 0 0 5px rgba(241,196,15,0.3); }
         .tax { color: #e74c3c; }
         
@@ -40,9 +40,11 @@
 
     <div class="ui-panel">
         <div>💵 Баланс: <span id="money-txt" class="money">0</span>$</div>
-        <div>📈 Уровень: <span id="lvl-txt" style="color: #3498db;">1</span></div>
+        <div>📈 Лвл: <span id="lvl-txt" style="color: #3498db;">1</span></div>
         <div>🔻 Налог: <span id="tax-txt" class="tax">50</span>$</div>
+        <div>🎒 Ключи: <span id="tools-txt" style="color: #e67e22;">0</span> шт.</div>
         <div class="timer-container">⏱️ <span id="timer-txt">15</span>с</div>
+        <button class="restart-btn" onclick="triggerRestart()">🚕 Такси (-30$)</button>
     </div>
 
     <div id="maze-grid"></div>
@@ -116,7 +118,6 @@
             }
         }
 
-        // ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ И СТАБИЛЬНЫЙ ГЕНЕРАТОР ГОРОДА
         function generateLevel() {
             currentMap = [];
             let wallChance = 0.14 + (level * 0.01);
@@ -142,9 +143,8 @@
                 }
                 currentMap.push(row);
             }
-            // Точечная бесконфликтная запись точек старта и финиша в двумерный массив
-            currentMap[1][1] = 'E';
-            currentMap[8][8] = 'F';
+            currentMap = 'E';
+            currentMap = 'F';
             
             p = { x: 1, y: 1 };
             resetTimer();
@@ -186,7 +186,7 @@
 
         function handleTaxPayment(isSuccessClose) {
             currentTax = 40 + (level * 15); 
-            document.getElementById('tax-txt').innerText = currentTax;
+            if(document.getElementById('tax-txt')) document.getElementById('tax-txt').innerText = currentTax;
 
             if (isSuccessClose) {
                 wallet += 120; 
@@ -209,6 +209,7 @@
                 localStorage.setItem('courier_scooter_bought', 'false');
                 document.getElementById('money-txt').innerText = wallet;
                 document.getElementById('lvl-txt').innerText = level;
+                if(document.getElementById('tools-txt')) document.getElementById('tools-txt').innerText = toolsCount;
             }
 
             saveLocalData();
@@ -247,7 +248,8 @@
             if ((currentMap[y][x] === 'W' || currentMap[y][x] === 'T') && x > 0 && x < 9 && y > 0 && y < 9) {
                 if (toolsCount > 0) {
                     toolsCount--; currentMap[y][x] = 'E';
-                    document.getElementById('tools-txt').innerText = toolsCount;
+                    const toolsTxt = document.getElementById('tools-txt');
+                    if(toolsTxt) toolsTxt.innerText = toolsCount;
                     showToast("🧱 Квартал расчищен!"); draw(); saveLocalData();
                 } else { showToast("❌ Нужен Мастер-Ключ!", "#e74c3c"); }
             }
@@ -279,6 +281,8 @@
             if (wallet >= 100) {
                 wallet -= 100; toolsCount++;
                 document.getElementById('money-txt').innerText = wallet;
+                const toolsTxt = document.getElementById('tools-txt');
+                if(toolsTxt) toolsTxt.innerText = toolsCount;
                 showToast("🔑 Получен Мастер-Ключ!"); updateShop(); saveLocalData();
             }
         }
@@ -311,6 +315,8 @@
 
             document.getElementById('money-txt').innerText = wallet;
             document.getElementById('lvl-txt').innerText = level;
+            const toolsTxt = document.getElementById('tools-txt');
+            if(toolsTxt) toolsTxt.innerText = toolsCount;
             currentTax = 40 + (level * 15);
             if(document.getElementById('tax-txt')) document.getElementById('tax-txt').innerText = currentTax;
             generateLevel(); draw();
