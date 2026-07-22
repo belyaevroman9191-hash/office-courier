@@ -3,49 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
-    <title>Офисный Курьер</title>
+    <title>Сити-Курьер: Офисный Драйв</title>
     <script src="https://telegram.org"></script>
     <style>
-        body { margin: 0; padding: 10px; background-color: #1e1e24; font-family: sans-serif; color: #fff; text-align: center; user-select: none; }
-        .ui-panel { background: #2a2a35; padding: 10px; margin: 0 auto 10px auto; width: 300px; border-radius: 8px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); align-items: center; }
-        .money { color: #f1c40f; }
+        body { margin: 0; padding: 10px; background-color: #1a1a1e; font-family: 'Segoe UI', sans-serif; color: #fff; text-align: center; user-select: none; }
+        .ui-panel { background: #25252b; padding: 12px; margin: 0 auto 10px auto; width: 300px; border-radius: 10px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.4); align-items: center; border: 1px solid #3a3a45; }
+        .money { color: #f1c40f; text-shadow: 0 0 5px rgba(241,196,15,0.3); }
         
-        /* Кнопка бесплатного перезапуска лабиринта */
-        .restart-btn { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; transition: background 0.2s; }
-        .restart-btn:hover { background: #c0392b; }
+        .restart-btn { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; transition: background 0.2s, transform 0.1s; box-shadow: 0 2px #c0392b; }
+        .restart-btn:active { transform: translateY(2px); box-shadow: 0 0 #c0392b; }
 
-        #maze-grid { display: grid; grid-template-columns: repeat(10, 30px); grid-template-rows: repeat(10, 30px); gap: 1px; justify-content: center; margin: 10px auto; background: #111116; padding: 5px; border-radius: 8px; width: 310px; }
-        .cell { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 18px; border-radius: 3px; cursor: pointer; }
-        .W { background: #34495e; transition: background 0.2s; } 
-        .W:hover { background: #c0392b; } 
-        .E { background: #1a1a20; } 
+        /* Карта города */
+        #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); border: 2px solid #34495e; }
+        .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: filter 0.2s; }
+        
+        /* Текстуры города */
+        .W { background: #7f8c8d; position: relative; } /* Небоскребы / Дома */
+        .W::after { content: "🏢"; font-size: 16px; position: absolute; }
+        .E { background: #34495e; border: 1px solid #2c3e50; } /* Асфальтированная дорога */
+        .T { background: #27ae60; position: relative; } /* Городской Парк / Деревья (тоже преграда) */
+        .T::after { content: "🌳"; font-size: 16px; position: absolute; }
 
-        #toast { position: fixed; top: -50px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 10px 20px; border-radius: 20px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: top 0.4s ease; z-index: 1000; font-size: 14px; white-space: nowrap; }
+        #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; white-space: nowrap; }
         #toast.show { top: 20px; }
 
-        .controls { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 60px); gap: 8px; justify-content: center; margin-top: 10px; }
-        .btn { background: #34495e; color: white; border: none; border-radius: 12px; font-size: 22px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px #2c3e50; }
-        .btn:active { transform: translateY(4px); box-shadow: 0 0 #2c3e50; }
+        .controls { display: grid; grid-template-columns: repeat(3, 62px); grid-template-rows: repeat(2, 62px); gap: 10px; justify-content: center; margin-top: 12px; }
+        .btn { background: #2c3e50; color: white; border: none; border-radius: 14px; font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px #1a252f; transition: all 0.1s; border: 1px solid #34495e; }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 #1a252f; background: #1a252f; }
         .btn-up { grid-column: 2; } .btn-left { grid-column: 1; grid-row: 2; } .btn-down { grid-column: 2; grid-row: 2; } .btn-right { grid-column: 3; grid-row: 2; }
 
-        .shop-container { background: #2a2a35; width: 300px; margin: 15px auto; padding: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align: left; }
-        .shop-title { font-size: 16px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 10px; }
-        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333; }
+        .shop-container { background: #25252b; width: 300px; margin: 15px auto; padding: 12px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); text-align: left; border: 1px solid #3a3a45; }
+        .shop-title { font-size: 15px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #3a3a45; padding-bottom: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #3a3a45; }
         .shop-item:last-child { border-bottom: none; }
-        .item-info { font-size: 14px; } .item-name { font-weight: bold; } .item-desc { font-size: 11px; color: #aaa; }
-        .buy-btn { background: #2ecc71; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
-        .buy-btn:disabled { background: #555; cursor: not-allowed; }
+        .item-info { font-size: 13px; } .item-name { font-weight: bold; color: #fff; } .item-desc { font-size: 11px; color: #8a8a9e; margin-top: 2px; }
+        .buy-btn { background: #2ecc71; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; box-shadow: 0 2px #27ae60; }
+        .buy-btn:disabled { background: #454552; color: #7a7a8a; cursor: not-allowed; box-shadow: none; }
     </style>
 </head>
 <body>
 
-    <div id="toast">Посылка доставлена! 📦</div>
+    <div id="toast">Заказ принят! 📦</div>
 
     <div class="ui-panel">
-        <div>💵 Баксы: <span id="money-txt" class="money">0</span>$</div>
-        <div>🔧 Инструменты: <span id="tools-txt" style="color: #e67e22;">0</span> шт.</div>
-        <!-- Кнопка спасения из тупика -->
-        <button class="restart-btn" onclick="triggerRestart()">🔄 Рестарт</button>
+        <div>💵 Выручка: <span id="money-txt" class="money">0</span>$</div>
+        <div>🔧 Пропуска: <span id="tools-txt" style="color: #e67e22;">0</span> шт.</div>
+        <button class="restart-btn" onclick="triggerRestart()">🚕 Сменить район</button>
     </div>
 
     <div id="maze-grid"></div>
@@ -58,18 +61,18 @@
     </div>
 
     <div class="shop-container">
-        <div class="shop-title">🎒 Магазин курьера</div>
+        <div class="shop-title">🏪 Автосалон и Снаряжение</div>
         <div class="shop-item">
             <div class="item-info">
-                <div class="item-name">🛠️ Набор слесаря (Кусачки)</div>
-                <div class="item-desc">Позволяет сломать 1 внутреннюю стену кликом</div>
+                <div class="item-name">🔑 Мастер-Ключ (Пропуск)</div>
+                <div class="item-desc">Снос здания кликом (открывает тупик)</div>
             </div>
             <button class="buy-btn" id="buy-tool" onclick="buyTool()">50$</button>
         </div>
         <div class="shop-item">
             <div class="item-info">
-                <div class="item-name">👟 Брендовые Кроссовки</div>
-                <div class="item-desc">Скин быстрого бегуна</div>
+                <div class="item-name">🏃‍♂️ Быстрый Курьер</div>
+                <div class="item-desc">Сменить транспорт на бег пешком</div>
             </div>
             <button class="buy-btn" id="buy-skin" onclick="buyItem('skin', 150, '🏃‍♂️')">150$</button>
         </div>
@@ -84,23 +87,30 @@
         let currentSkin = '🚴'; 
         let currentMap = [];
 
+        // Алгоритм генерации городской застройки
         function generateLevel() {
             currentMap = [];
             for (let y = 0; y < 10; y++) {
                 let row = [];
                 for (let x = 0; x < 10; x++) {
+                    // Внешние границы города (окружное шоссе)
                     if (y === 0 || y === 9 || x === 0 || x === 9) {
                         row.push('W');
                     } else {
-                        if (Math.random() < 0.22 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
-                            row.push('W');
+                        let rand = Math.random();
+                        if (rand < 0.20 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
+                            row.push('W'); // Жилой дом
+                        } else if (rand >= 0.20 && rand < 0.28 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
+                            row.push('T'); // Городской парк с деревьями
                         } else {
-                            row.push(Math.random() < 0.15 && !(x === 1 && y === 1) && !(x === 8 && y === 8) ? 'M' : 'E');
+                            // Раскидываем посылки (деньги) на дорогах
+                            row.push(Math.random() < 0.14 && !(x === 1 && y === 1) && !(x === 8 && y === 8) ? 'M' : 'E');
                         }
                     }
                 }
                 currentMap.push(row);
             }
+            // Старт на свободной дороге, финиш - Центральный офис в углу карты
             currentMap[1][1] = 'E';
             currentMap[8][8] = 'F';
             p = { x: 1, y: 1 };
@@ -113,7 +123,14 @@
             for (let y = 0; y < 10; y++) {
                 for (let x = 0; x < 10; x++) {
                     const cell = document.createElement('div');
-                    cell.className = 'cell ' + (currentMap[y][x] === 'W' ? 'W' : 'E');
+                    
+                    // Задаем текстуру в зависимости от типа городской зоны
+                    let type = currentMap[y][x];
+                    if (type === 'M' || type === 'F') {
+                        cell.className = 'cell E'; // Посылки и офис лежат на асфальте
+                    } else {
+                        cell.className = 'cell ' + type;
+                    }
                     
                     cell.onclick = () => breakWall(x, y);
                     
@@ -122,7 +139,7 @@
                     } else if (currentMap[y][x] === 'M') {
                         cell.innerText = '💵';
                     } else if (currentMap[y][x] === 'F') {
-                        cell.innerText = '🏢';
+                        cell.innerText = '🏁';
                     }
                     container.appendChild(cell);
                 }
@@ -130,23 +147,23 @@
             updateShop();
         }
 
-        // Логика кнопки спасения при тупике
         function triggerRestart() {
             generateLevel();
             draw();
-            showToast("🔄 Карта обновлена! Ищем новый путь...", "#3498db");
+            showToast("🚕 Переезжаем в другой район города!", "#3498db");
         }
 
         function breakWall(x, y) {
-            if (currentMap[y][x] === 'W' && x > 0 && x < 9 && y > 0 && y < 9) {
+            // Мастер-ключ сносит внутренние дома (W) или вырубает деревья (T)
+            if ((currentMap[y][x] === 'W' || currentMap[y][x] === 'T') && x > 0 && x < 9 && y > 0 && y < 9) {
                 if (toolsCount > 0) {
                     toolsCount--;
                     currentMap[y][x] = 'E';
                     document.getElementById('tools-txt').innerText = toolsCount;
-                    showToast("🔨 Стена разрушена!");
+                    showToast("🧱 Квартал расчищен под дорогу!");
                     draw();
                 } else {
-                    showToast("❌ Купите инструмент слесаря в магазине ниже!", "#e74c3c");
+                    showToast("❌ Купите Мастер-Ключ в автосалоне ниже!", "#e74c3c");
                 }
             }
         }
@@ -165,7 +182,8 @@
             let nx = p.x + dx;
             let ny = p.y + dy;
 
-            if (currentMap[ny] && currentMap[ny][nx] !== 'W') {
+            // Курьер может ехать только по дорогам (тип E, M, F) и не может сквозь дома (W) и парки (T)
+            if (currentMap[ny] && currentMap[ny][nx] !== 'W' && currentMap[ny][nx] !== 'T') {
                 p.x = nx;
                 p.y = ny;
 
@@ -173,13 +191,13 @@
                     wallet += 50;
                     currentMap[p.y][p.x] = 'E';
                     document.getElementById('money-txt').innerText = wallet;
-                    showToast("💵 Найдено +50$!");
+                    showToast("💵 Посылка подобрана! +50$");
                 }
 
                 if (currentMap[p.y][p.x] === 'F') {
                     wallet += 100;
                     document.getElementById('money-txt').innerText = wallet;
-                    showToast("🎉 Доставка выполнена! +100$");
+                    showToast("🏁 Доставили в главный офис! +100$");
                     generateLevel();
                 }
                 draw();
@@ -192,7 +210,7 @@
                 toolsCount++;
                 document.getElementById('money-txt').innerText = wallet;
                 document.getElementById('tools-txt').innerText = toolsCount;
-                showToast("🛠️ Кусачки добавлены в рюкзак!");
+                showToast("🔑 Получен допуск к сносу преград!");
                 updateShop();
             }
         }
@@ -204,7 +222,7 @@
                 currentSkin = emoji;
                 document.getElementById(`buy-${id}`).innerText = "Одето";
                 document.getElementById(`buy-${id}`).disabled = true;
-                showToast("👟 Стиль успешно изменен!");
+                showToast("💼 Имидж курьера обновлен!");
                 draw();
             }
         }
