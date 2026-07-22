@@ -7,14 +7,21 @@
     <script src="https://telegram.org"></script>
     <style>
         body { margin: 0; padding: 10px; background-color: #1e1e24; font-family: sans-serif; color: #fff; text-align: center; user-select: none; }
-        .ui-panel { background: #2a2a35; padding: 10px; margin: 0 auto 10px auto; width: 300px; border-radius: 8px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .money { color: #f1c40f; } .level { color: #3498db; }
+        .ui-panel { background: #2a2a35; padding: 10px; margin: 0 auto 10px auto; width: 300px; border-radius: 8px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); align-items: center; }
+        .money { color: #f1c40f; }
         
+        /* Кнопка бесплатного перезапуска лабиринта */
+        .restart-btn { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; transition: background 0.2s; }
+        .restart-btn:hover { background: #c0392b; }
+
         #maze-grid { display: grid; grid-template-columns: repeat(10, 30px); grid-template-rows: repeat(10, 30px); gap: 1px; justify-content: center; margin: 10px auto; background: #111116; padding: 5px; border-radius: 8px; width: 310px; }
         .cell { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 18px; border-radius: 3px; cursor: pointer; }
         .W { background: #34495e; transition: background 0.2s; } 
-        .W:hover { background: #c0392b; } /* Подсветка стены при наведении */
+        .W:hover { background: #c0392b; } 
         .E { background: #1a1a20; } 
+
+        #toast { position: fixed; top: -50px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 10px 20px; border-radius: 20px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: top 0.4s ease; z-index: 1000; font-size: 14px; white-space: nowrap; }
+        #toast.show { top: 20px; }
 
         .controls { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 60px); gap: 8px; justify-content: center; margin-top: 10px; }
         .btn { background: #34495e; color: white; border: none; border-radius: 12px; font-size: 22px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px #2c3e50; }
@@ -32,9 +39,13 @@
 </head>
 <body>
 
+    <div id="toast">Посылка доставлена! 📦</div>
+
     <div class="ui-panel">
         <div>💵 Баксы: <span id="money-txt" class="money">0</span>$</div>
-        <div>🔧 Специнструмент: <span id="tools-txt" style="color: #e67e22;">0</span> шт.</div>
+        <div>🔧 Инструменты: <span id="tools-txt" style="color: #e67e22;">0</span> шт.</div>
+        <!-- Кнопка спасения из тупика -->
+        <button class="restart-btn" onclick="triggerRestart()">🔄 Рестарт</button>
     </div>
 
     <div id="maze-grid"></div>
@@ -51,7 +62,7 @@
         <div class="shop-item">
             <div class="item-info">
                 <div class="item-name">🛠️ Набор слесаря (Кусачки)</div>
-                <div class="item-desc">Позволяет сломать 1 стену кликом мыши</div>
+                <div class="item-desc">Позволяет сломать 1 внутреннюю стену кликом</div>
             </div>
             <button class="buy-btn" id="buy-tool" onclick="buyTool()">50$</button>
         </div>
@@ -63,14 +74,12 @@
             <button class="buy-btn" id="buy-skin" onclick="buyItem('skin', 150, '🏃‍♂️')">150$</button>
         </div>
     </div>
-
     <script>
         const tg = window.Telegram?.WebApp;
         if (tg && typeof tg.expand === 'function') tg.expand();
 
         let wallet = 0;
-        let level = 1;
-        let toolsCount = 0; // Количество кусачек для ломания стен
+        let toolsCount = 0;
         let p = { x: 1, y: 1 };
         let currentSkin = '🚴'; 
         let currentMap = [];
@@ -106,7 +115,6 @@
                     const cell = document.createElement('div');
                     cell.className = 'cell ' + (currentMap[y][x] === 'W' ? 'W' : 'E');
                     
-                    // Клик на ячейку для разрушения стены
                     cell.onclick = () => breakWall(x, y);
                     
                     if (x === p.x && y === p.y) {
@@ -122,19 +130,35 @@
             updateShop();
         }
 
-        // Функция разрушения стены
+        // Логика кнопки спасения при тупике
+        function triggerRestart() {
+            generateLevel();
+            draw();
+            showToast("🔄 Карта обновлена! Ищем новый путь...", "#3498db");
+        }
+
         function breakWall(x, y) {
-            // Разрушать можно только внутренние стены и только если есть кусачки
             if (currentMap[y][x] === 'W' && x > 0 && x < 9 && y > 0 && y < 9) {
                 if (toolsCount > 0) {
                     toolsCount--;
-                    currentMap[y][x] = 'E'; // Стена становится полом
+                    currentMap[y][x] = 'E';
                     document.getElementById('tools-txt').innerText = toolsCount;
+                    showToast("🔨 Стена разрушена!");
                     draw();
                 } else {
-                    alert("У вас нет инструментов! Купите Набор слесаря в магазине снизу.");
+                    showToast("❌ Купите инструмент слесаря в магазине ниже!", "#e74c3c");
                 }
             }
+        }
+
+        function showToast(text, color = "#2ecc71") {
+            const toast = document.getElementById('toast');
+            toast.innerText = text;
+            toast.style.background = color;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
         }
 
         function move(dx, dy) {
@@ -149,12 +173,13 @@
                     wallet += 50;
                     currentMap[p.y][p.x] = 'E';
                     document.getElementById('money-txt').innerText = wallet;
+                    showToast("💵 Найдено +50$!");
                 }
 
                 if (currentMap[p.y][p.x] === 'F') {
-                    alert("Посылка доставлена! Заработок +100$");
                     wallet += 100;
                     document.getElementById('money-txt').innerText = wallet;
+                    showToast("🎉 Доставка выполнена! +100$");
                     generateLevel();
                 }
                 draw();
@@ -167,6 +192,7 @@
                 toolsCount++;
                 document.getElementById('money-txt').innerText = wallet;
                 document.getElementById('tools-txt').innerText = toolsCount;
+                showToast("🛠️ Кусачки добавлены в рюкзак!");
                 updateShop();
             }
         }
@@ -178,6 +204,7 @@
                 currentSkin = emoji;
                 document.getElementById(`buy-${id}`).innerText = "Одето";
                 document.getElementById(`buy-${id}`).disabled = true;
+                showToast("👟 Стиль успешно изменен!");
                 draw();
             }
         }
