@@ -42,7 +42,6 @@
         <button class="restart-btn" onclick="triggerRestart()">🚕 Район</button>
     </div>
 
-    <!-- Игровое поле, на котором теперь работают свайпы пальцем -->
     <div id="maze-grid"></div>
 
     <div class="shop-container">
@@ -56,10 +55,10 @@
         </div>
         <div class="shop-item">
             <div>
-                <div style="font-weight:bold;">🏃‍♂️ Быстрый Курьер</div>
-                <div style="font-size:11px; color:#aaa;">Сменить транспорт на бег</div>
+                <div style="font-weight:bold;">🚴 Скоростной Велосипед</div>
+                <div style="font-size:11px; color:#aaa;">Купить быстрый транспорт</div>
             </div>
-            <button class="buy-btn" id="buy-skin" onclick="buyItem('skin', 150, '🏃‍♂️')">150$</button>
+            <button class="buy-btn" id="buy-skin" onclick="buyItem('skin', 150, '🚴')">150$</button>
         </div>
     </div>
     <script>
@@ -69,12 +68,11 @@
         let wallet = 0;
         let toolsCount = 0;
         let p = { x: 1, y: 1 };
-        let currentSkin = '🚴'; 
+        let currentSkin = '🏃‍♂️'; // СТАРТ ПЕШКОМ С НУЛЯ
         let currentMap = [];
         let timeLeft = 15; 
         let timerInterval = null; 
 
-        // Переменные для отслеживания пальца на экране телефона
         let touchStartX = 0;
         let touchStartY = 0;
 
@@ -104,21 +102,30 @@
             }
         }
 
-        const fixedMap = [
-            ['W','W','W','W','W','W','W','W','W','W'],
-            ['W','E','M','E','T','E','E','M','E','W'],
-            ['W','E','W','W','E','W','W','E','W','W'],
-            ['W','M','E','E','E','E','T','E','E','W'],
-            ['W','W','T','W','W','E','W','W','M','W'],
-            ['W','E','E','E','M','E','E','T','E','W'],
-            ['W','E','W','W','E','W','W','E','W','W'],
-            ['W','M','E','T','E','E','M','E','E','W'],
-            ['W','E','E','E','E','T','E','E','F','W'],
-            ['W','W','W','W','W','W','W','W','W','W']
-        ];
-
         function generateLevel() {
-            currentMap = JSON.parse(JSON.stringify(fixedMap));
+            currentMap = [];
+            for (let y = 0; y < 10; y++) {
+                let row = [];
+                for (let x = 0; x < 10; x++) {
+                    if (y === 0 || y === 9 || x === 0 || x === 9) {
+                        row.push('W'); 
+                    } else {
+                        let rand = Math.random();
+                        if (rand < 0.16 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
+                            row.push('W'); 
+                        } else if (rand >= 0.16 && rand < 0.23 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
+                            row.push('T'); 
+                        } else if (rand >= 0.23 && rand < 0.35 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
+                            row.push('M'); 
+                        } else {
+                            row.push('E'); 
+                        }
+                    }
+                }
+                currentMap.push(row);
+            }
+            currentMap[1][1] = 'E';
+            currentMap[8][8] = 'F';
             p = { x: 1, y: 1 };
             resetTimer();
         }
@@ -154,7 +161,6 @@
             }
             startTimer();
         }
-
         function draw() {
             const container = document.getElementById('maze-grid');
             if (!container) return;
@@ -221,7 +227,6 @@
                     wallet += 100; document.getElementById('money-txt').innerText = wallet;
                     showToast("🏁 Доставили вовремя! +100$"); playSound('coin');
                     generateLevel();
-                    saveLocalData();
                 }
                 draw();
             }
@@ -242,7 +247,7 @@
                 currentSkin = emoji; localStorage.setItem('courier_skin_bought', 'true');
                 document.getElementById(`buy-${id}`).innerText = "Одето";
                 document.getElementById(`buy-${id}`).disabled = true;
-                showToast("💼 Имидж курьера обновлен!");
+                showToast("💼 Транспорт куплен! Теперь вы на велике!");
                 draw(); saveLocalData();
             }
         }
@@ -256,7 +261,7 @@
         function loadLocalData() {
             wallet = parseInt(localStorage.getItem('courier_wallet')) || 0;
             toolsCount = parseInt(localStorage.getItem('courier_tools')) || 0;
-            currentSkin = localStorage.getItem('courier_skin') || '🚴';
+            currentSkin = localStorage.getItem('courier_skin') || '🏃‍♂️'; 
             document.getElementById('money-txt').innerText = wallet;
             if (localStorage.getItem('courier_skin_bought') === 'true') {
                 const b2 = document.getElementById('buy-skin'); if (b2) { b2.innerText = "Одето"; b2.disabled = true; }
@@ -271,7 +276,6 @@
             localStorage.setItem('courier_skin', currentSkin);
         }
 
-        // 💻 СЛУШАТЕЛЬ КЛАВИАТУРЫ (Для офисных ПК)
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'ц') move(0, -1);
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'ы') move(0, 1);
@@ -279,37 +283,25 @@
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') move(1, 0);
         });
 
-        // 📱 УМНЫЙ АЛГОРИТМ СВАЙПОВ (Для смартфонов)
         window.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
+            touchStartX = e.changedTouches.screenX;
+            touchStartY = e.changedTouches.screenY;
         }, { passive: true });
 
         window.addEventListener('touchend', (e) => {
-            let touchEndX = e.changedTouches[0].screenX;
-            let touchEndY = e.changedTouches[0].screenY;
-            
+            let touchEndX = e.changedTouches.screenX;
+            let touchEndY = e.changedTouches.screenY;
             let diffX = touchEndX - touchStartX;
             let diffY = touchEndY - touchStartY;
-            
-            // Фильтр от микро-касаний (свайп должен быть больше 30 пикселей)
             if (Math.max(Math.abs(diffX), Math.abs(diffY)) < 30) return;
-            
             if (Math.abs(diffX) > Math.abs(diffY)) {
-                // Движение по горизонтали
-                if (diffX > 0) move(1, 0);  // Свайп вправо
-                else move(-1, 0);           // Свайп влево
+                if (diffX > 0) move(1, 0); else move(-1, 0);
             } else {
-                // Движение по вертикали
-                if (diffY > 0) move(0, 1);  // Свайп вниз
-                else move(0, -1);           // Свайп вверх
+                if (diffY > 0) move(0, 1); else move(0, -1);
             }
         }, { passive: true });
 
-        // Автобэкап каждые 2 секунды в память браузера
         setInterval(saveLocalData, 2000);
-
-        // Старт игры
         loadLocalData();
     </script>
 </body>
