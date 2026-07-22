@@ -3,33 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
-    <title>Сити-Курьер: Офисный Драйв</title>
+    <title>Сити-Курьер: Офисный Кризис</title>
     <script src="https://telegram.org"></script>
     <style>
-        body { margin: 0; padding: 10px; background-color: #1a1a1e; font-family: 'Segoe UI', sans-serif; color: #fff; text-align: center; user-select: none; touch-action: none; }
-        .ui-panel { background: #25252b; padding: 12px; margin: 0 auto 10px auto; width: 300px; border-radius: 10px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.4); align-items: center; border: 1px solid #3a3a45; }
+        body { margin: 0; padding: 10px; background-color: #111114; font-family: 'Segoe UI', sans-serif; color: #fff; text-align: center; user-select: none; touch-action: none; }
+        .ui-panel { background: #1e1e24; padding: 12px; margin: 0 auto 5px auto; width: 310px; border-radius: 10px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.5); align-items: center; border: 1px solid #2e2e38; font-size: 13px; }
         .money { color: #f1c40f; text-shadow: 0 0 5px rgba(241,196,15,0.3); }
+        .tax { color: #e74c3c; }
         
-        .timer-container { font-size: 14px; color: #e74c3c; background: rgba(231, 76, 60, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(231, 76, 60, 0.3); }
-        .timer-danger { animation: blink 0.5s infinite alternate; color: #ff4757; font-weight: bold; }
+        .timer-container { font-size: 14px; color: #2ecc71; background: rgba(46, 204, 113, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(46, 204, 113, 0.3); }
+        .timer-danger { animation: blink 0.5s infinite alternate; color: #ff4757; background: rgba(231, 76, 60, 0.2); border: 1px solid #ff4757; font-weight: bold; }
         @keyframes blink { from { opacity: 1; } to { opacity: 0.4; } }
-        .restart-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
         
-        #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 15px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); border: 2px solid #34495e; }
+        #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.7); border: 2px solid #34495e; }
         .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
-        .W { background: #7f8c8d; position: relative; } 
+        .W { background: #57606f; position: relative; } 
         .W::after { content: "🏢"; font-size: 16px; position: absolute; }
-        .E { background: #34495e; border: 1px solid #2c3e50; } 
-        .T { background: #27ae60; position: relative; } 
+        .E { background: #2f3542; border: 0.5px solid #1e222b; } 
+        .T { background: #2ed573; position: relative; } 
         .T::after { content: "🌳"; font-size: 16px; position: absolute; }
         
-        #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.4s; z-index: 1000; font-size: 13px; }
+        #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; }
         #toast.show { top: 20px; }
-        .shop-container { background: #25252b; width: 300px; margin: 15px auto; padding: 12px; border-radius: 10px; text-align: left; border: 1px solid #3a3a45; }
-        .shop-title { font-size: 15px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #3a3a45; padding-bottom: 6px; margin-bottom: 10px; }
-        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #3a3a45; }
-        .buy-btn { background: #2ecc71; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .buy-btn:disabled { background: #454552; color: #7a7a8a; cursor: not-allowed; }
+        
+        .shop-container { background: #1e1e24; width: 310px; margin: 10px auto; padding: 12px; border-radius: 10px; text-align: left; border: 1px solid #2e2e38; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+        .shop-title { font-size: 13px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #2e2e38; padding-bottom: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #2e2e38; }
+        .shop-item:last-child { border-bottom: none; }
+        .buy-btn { background: #2ecc71; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; box-shadow: 0 2px #27ae60; }
+        .buy-btn:disabled { background: #2f3542; color: #57606f; cursor: not-allowed; box-shadow: none; }
     </style>
 </head>
 <body>
@@ -37,28 +39,36 @@
     <div id="toast">Заказ принят! 📦</div>
 
     <div class="ui-panel">
-        <div>💵 Выручка: <span id="money-txt" class="money">0</span>$</div>
+        <div>💵 Баланс: <span id="money-txt" class="money">0</span>$</div>
+        <div>📈 Уровень: <span id="lvl-txt" style="color: #3498db;">1</span></div>
+        <div>🔻 Налог: <span id="tax-txt" class="tax">50</span>$</div>
         <div class="timer-container">⏱️ <span id="timer-txt">15</span>с</div>
-        <button class="restart-btn" onclick="triggerRestart()">🚕 Район</button>
     </div>
 
     <div id="maze-grid"></div>
 
     <div class="shop-container">
-        <div class="shop-title">🏪 Автосалон и Снаряжение</div>
+        <div class="shop-title">🏪 Элитный Автосалон (Прокачка)</div>
         <div class="shop-item">
             <div>
-                <div style="font-weight:bold;">🔑 Мастер-Ключ</div>
-                <div style="font-size:11px; color:#aaa;">Снос здания кликом</div>
+                <div style="font-weight:bold; font-size: 13px;">🔑 Мастер-Ключ</div>
+                <div style="font-size:11px; color:#aaa;">Снос 1 здания кликом мыши</div>
             </div>
-            <button class="buy-btn" id="buy-tool" onclick="buyTool()">50$</button>
+            <button class="buy-btn" id="buy-tool" onclick="buyTool()">100$</button>
         </div>
         <div class="shop-item">
             <div>
-                <div style="font-weight:bold;">🚴 Скоростной Велосипед</div>
-                <div style="font-size:11px; color:#aaa;">Купить быстрый транспорт</div>
+                <div style="font-weight:bold; font-size: 13px;">🚴 Скоростной Велосипед</div>
+                <div style="font-size:11px; color:#aaa;">Дает +3 секунды к таймеру раунда</div>
             </div>
-            <button class="buy-btn" id="buy-skin" onclick="buyItem('skin', 150, '🚴')">150$</button>
+            <button class="buy-btn" id="buy-skin" onclick="buyItem('skin', 600, '🚴')">600$</button>
+        </div>
+        <div class="shop-item">
+            <div>
+                <div style="font-weight:bold; font-size: 13px;">🛴 Электросамокат Киберпанк</div>
+                <div style="font-size:11px; color:#aaa;">Дает +6 секунд к таймеру раунда</div>
+            </div>
+            <button class="buy-btn" id="buy-scooter" onclick="buyItem('scooter', 1500, '🛴')">1500$</button>
         </div>
     </div>
     <script>
@@ -68,42 +78,50 @@
         let wallet = 0;
         let toolsCount = 0;
         let p = { x: 1, y: 1 };
-        let currentSkin = '🏃‍♂️'; // СТАРТ ПЕШКОМ С НУЛЯ
+        let currentSkin = '🏃‍♂️'; // Изначально строго пешком!
         let currentMap = [];
+        
+        let level = 1;
+        let baseTime = 15; // Базовое хардкорное время
         let timeLeft = 15; 
         let timerInterval = null; 
+        let currentTax = 50; // Базовый налог за раунд
 
-        let touchStartX = 0;
-        let touchStartY = 0;
-
+        let touchStartX = 0; let touchStartY = 0;
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
         function initAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
 
         function playSound(type) {
-            initAudio();
-            if (!audioCtx) return;
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            initAudio(); if (!audioCtx) return;
+            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
             if (type === 'step') {
                 osc.type = 'triangle'; osc.frequency.setValueAtTime(120, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.08);
             } else if (type === 'coin') {
                 osc.type = 'sine'; osc.frequency.setValueAtTime(900, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.12);
             } else if (type === 'tick') {
-                osc.type = 'square'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+                osc.type = 'square'; osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.04);
+            } else if (type === 'gameover') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
             }
         }
 
         function generateLevel() {
             currentMap = [];
+            // Повышаем плотность застройки с ростом уровней
+            let wallChance = 0.14 + (level * 0.01);
+            if (wallChance > 0.23) wallChance = 0.23;
+
             for (let y = 0; y < 10; y++) {
                 let row = [];
                 for (let x = 0; x < 10; x++) {
@@ -111,11 +129,11 @@
                         row.push('W'); 
                     } else {
                         let rand = Math.random();
-                        if (rand < 0.16 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
+                        if (rand < wallChance && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
                             row.push('W'); 
-                        } else if (rand >= 0.16 && rand < 0.23 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
+                        } else if (rand >= wallChance && rand < wallChance + 0.07 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
                             row.push('T'); 
-                        } else if (rand >= 0.23 && rand < 0.35 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
+                        } else if (rand >= wallChance + 0.07 && rand < wallChance + 0.22 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
                             row.push('M'); 
                         } else {
                             row.push('E'); 
@@ -124,12 +142,11 @@
                 }
                 currentMap.push(row);
             }
-            currentMap[1][1] = 'E';
-            currentMap[8][8] = 'F';
+            currentMap = 'E';
+            currentMap = 'F';
             p = { x: 1, y: 1 };
             resetTimer();
         }
-
         function startTimer() {
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
@@ -138,46 +155,82 @@
                 if (timerTxt) {
                     timerTxt.innerText = timeLeft;
                     if (timeLeft <= 5) {
-                        timerTxt.parentElement.classList.add('timer-danger');
+                        timerTxt.parentElement.className = 'timer-container timer-danger';
                         playSound('tick');
                     } else {
-                        timerTxt.parentElement.classList.remove('timer-danger');
+                        timerTxt.parentElement.className = 'timer-container';
                     }
                 }
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    showToast("⏰ Дедлайн провален! Перезапуск района.", "#e74c3c");
-                    setTimeout(() => { generateLevel(); draw(); }, 1200);
+                    handleTaxPayment(false); // Дедлайн провален, списываем налог без бонуса финиша
                 }
             }, 1000);
         }
 
         function resetTimer() {
-            timeLeft = 15;
+            // Бонус к времени за купленный транспорт
+            let bonusTime = 0;
+            if (currentSkin === '🚴') bonusTime = 3;
+            if (currentSkin === '🛴') bonusTime = 6;
+            
+            timeLeft = baseTime + bonusTime;
             const timerTxt = document.getElementById('timer-txt');
             if (timerTxt) {
                 timerTxt.innerText = timeLeft;
-                timerTxt.parentElement.classList.remove('timer-danger');
+                timerTxt.parentElement.className = 'timer-container';
             }
             startTimer();
         }
+
+        // ЖЕСТКАЯ СИСТЕМА НАЛОГОВ И БАНКРОТСТВА
+        function handleTaxPayment(isSuccessClose) {
+            currentTax = 40 + (level * 15); // Налог растет с каждым уровнем
+            document.getElementById('tax-txt').innerText = currentTax;
+
+            if (isSuccessClose) {
+                wallet += 120; // Премия за успешную доставку в главный офис
+                level++;
+                showToast(`🏁 Доставлено! +120$. Квартальный налог -${currentTax}$`);
+            } else {
+                showToast(`⏰ Опоздание! Премии нет. Квартальный налог -${currentTax}$`, "#e74c3c");
+            }
+
+            wallet -= currentTax;
+            document.getElementById('money-txt').innerText = wallet;
+            document.getElementById('lvl-txt').innerText = level;
+
+            // КРИЗИС: Проверка на банкротство
+            if (wallet < 0) {
+                clearInterval(timerInterval);
+                playSound('gameover');
+                alert(`💸 ВЫ БАНКРОТ! Вы не смогли оплатить налоги компании. Ваши счета обнулены, транспорт конфискован. Ваш максимальный уровень: ${level}`);
+                
+                // Полное обнуление прогресса
+                wallet = 0; level = 1; toolsCount = 0; currentSkin = '🏃‍♂️';
+                localStorage.setItem('courier_skin_bought', 'false');
+                localStorage.setItem('courier_scooter_bought', 'false');
+                document.getElementById('money-txt').innerText = wallet;
+                document.getElementById('lvl-txt').innerText = level;
+            }
+
+            saveLocalData();
+            generateLevel();
+            draw();
+        }
+
         function draw() {
             const container = document.getElementById('maze-grid');
-            if (!container) return;
-            container.innerHTML = '';
+            if (!container) return; container.innerHTML = '';
             for (let y = 0; y < 10; y++) {
                 for (let x = 0; x < 10; x++) {
                     const cell = document.createElement('div');
                     let type = currentMap[y][x];
                     cell.className = 'cell ' + (type === 'M' || type === 'F' ? 'E' : type);
                     cell.onclick = () => breakWall(x, y);
-                    if (x === p.x && y === p.y) {
-                        cell.innerText = currentSkin;
-                    } else if (type === 'M') {
-                        cell.innerText = '💵';
-                    } else if (type === 'F') {
-                        cell.innerText = '🏁';
-                    }
+                    if (x === p.x && y === p.y) { cell.innerText = currentSkin; }
+                    else if (type === 'M') { cell.innerText = '💵'; }
+                    else if (type === 'F') { cell.innerText = '🏁'; }
                     container.appendChild(cell);
                 }
             }
@@ -185,94 +238,90 @@
         }
 
         function triggerRestart() {
-            generateLevel();
-            draw();
-            showToast("🚕 Сменили район города!", "#3498db");
+            wallet -= 30; // Штраф за вызов ложного такси
+            document.getElementById('money-txt').innerText = wallet;
+            if (wallet < 0) { handleTaxPayment(false); return; }
+            generateLevel(); draw();
+            showToast("🚕 Сменили район! Диспетчер выписал штраф -30$.", "#3498db");
         }
 
         function breakWall(x, y) {
             if ((currentMap[y][x] === 'W' || currentMap[y][x] === 'T') && x > 0 && x < 9 && y > 0 && y < 9) {
                 if (toolsCount > 0) {
-                    toolsCount--;
-                    currentMap[y][x] = 'E';
-                    showToast("🧱 Квартал расчищен!");
-                    draw();
-                    saveLocalData();
-                } else {
-                    showToast("❌ Нужен Мастер-Ключ!", "#e74c3c");
-                }
+                    toolsCount--; currentMap[y][x] = 'E';
+                    document.getElementById('tools-txt').innerText = toolsCount;
+                    showToast("🧱 Квартал расчищен!"); draw(); saveLocalData();
+                } else { showToast("❌ Нужен Мастер-Ключ!", "#e74c3c"); }
             }
         }
 
         function showToast(text, color = "#2ecc71") {
             const toast = document.getElementById('toast');
-            if (toast) {
-                toast.innerText = text; toast.style.background = color; toast.classList.add('show');
-                setTimeout(() => { toast.classList.remove('show'); }, 1200);
-            }
+            if (toast) { toast.innerText = text; toast.style.background = color; toast.classList.add('show'); setTimeout(() => { toast.classList.remove('show'); }, 1200); }
         }
 
         function move(dx, dy) {
             let nx = p.x + dx; let ny = p.y + dy;
             if (currentMap[ny] && currentMap[ny][nx] !== 'W' && currentMap[ny][nx] !== 'T') {
-                p.x = nx; p.y = ny;
-                playSound('step');
+                p.x = nx; p.y = ny; playSound('step');
                 if (currentMap[p.y][p.x] === 'M') {
-                    wallet += 50; currentMap[p.y][p.x] = 'E';
+                    wallet += 25; currentMap[p.y][p.x] = 'E'; // Снизили стоимость пачки до 25$
                     document.getElementById('money-txt').innerText = wallet;
-                    showToast("💵 Посылка подобрана! +50$"); playSound('coin');
-                    saveLocalData();
+                    showToast("💵 Чек подобран! +25$"); playSound('coin'); saveLocalData();
                 }
                 if (currentMap[p.y][p.x] === 'F') {
-                    wallet += 100; document.getElementById('money-txt').innerText = wallet;
-                    showToast("🏁 Доставили вовремя! +100$"); playSound('coin');
-                    generateLevel();
+                    playSound('coin');
+                    handleTaxPayment(true); // Успешный финиш
                 }
                 draw();
             }
         }
 
         function buyTool() {
-            if (wallet >= 50) {
-                wallet -= 50; toolsCount++;
+            if (wallet >= 100) {
+                wallet -= 100; toolsCount++;
                 document.getElementById('money-txt').innerText = wallet;
-                showToast("🔑 Получен Мастер-Ключ!");
-                updateShop(); saveLocalData();
+                showToast("🔑 Получен Мастер-Ключ!"); updateShop(); saveLocalData();
             }
         }
 
         function buyItem(id, price, emoji) {
             if (wallet >= price) {
                 wallet -= price; document.getElementById('money-txt').innerText = wallet;
-                currentSkin = emoji; localStorage.setItem('courier_skin_bought', 'true');
-                document.getElementById(`buy-${id}`).innerText = "Одето";
-                document.getElementById(`buy-${id}`).disabled = true;
-                showToast("💼 Транспорт куплен! Теперь вы на велике!");
+                currentSkin = emoji; 
+                localStorage.setItem(`courier_${id}_bought`, 'true');
+                showToast("💼 Транспорт куплен! Время раундов увеличено!");
                 draw(); saveLocalData();
             }
         }
 
         function updateShop() {
-            const b1 = document.getElementById('buy-tool'); const b2 = document.getElementById('buy-skin');
-            if (b1) b1.disabled = wallet < 50;
-            if (b2) b2.disabled = wallet < 150 && b2.innerText !== "Одето";
+            const b1 = document.getElementById('buy-tool'); const b2 = document.getElementById('buy-skin'); const b3 = document.getElementById('buy-scooter');
+            if (b1) b1.disabled = wallet < 100;
+            if (b2) { b2.disabled = wallet < 600 || localStorage.getItem('courier_skin_bought') === 'true'; if (localStorage.getItem('courier_skin_bought') === 'true') b2.innerText = "Куплено"; }
+            if (b3) { b3.disabled = wallet < 1500 || localStorage.getItem('courier_scooter_bought') === 'true'; if (localStorage.getItem('courier_scooter_bought') === 'true') b3.innerText = "Куплено"; }
         }
 
         function loadLocalData() {
             wallet = parseInt(localStorage.getItem('courier_wallet')) || 0;
             toolsCount = parseInt(localStorage.getItem('courier_tools')) || 0;
-            currentSkin = localStorage.getItem('courier_skin') || '🏃‍♂️'; 
+            level = parseInt(localStorage.getItem('courier_level')) || 1;
+            
+            if (localStorage.getItem('courier_scooter_bought') === 'true') currentSkin = '🛴';
+            else if (localStorage.getItem('courier_skin_bought') === 'true') currentSkin = '🚴';
+            else currentSkin = '🏃‍♂️';
+
             document.getElementById('money-txt').innerText = wallet;
-            if (localStorage.getItem('courier_skin_bought') === 'true') {
-                const b2 = document.getElementById('buy-skin'); if (b2) { b2.innerText = "Одето"; b2.disabled = true; }
-            }
-            generateLevel();
-            draw();
+            document.getElementById('lvl-txt').innerText = level;
+            currentTax = 40 + (level * 15);
+            document.getElementById('tax-txt').innerText = currentTax;
+            generateLevel(); draw();
         }
 
         function saveLocalData() {
             localStorage.setItem('courier_wallet', wallet);
             localStorage.setItem('courier_tools', toolsCount);
+            localStorage.setItem('courier_level', level);
             localStorage.setItem('courier_skin', currentSkin);
         }
 
@@ -283,22 +332,13 @@
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') move(1, 0);
         });
 
-        window.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches.screenX;
-            touchStartY = e.changedTouches.screenY;
-        }, { passive: true });
-
+        window.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches.screenX; touchStartY = e.changedTouches.screenY; }, { passive: true });
         window.addEventListener('touchend', (e) => {
-            let touchEndX = e.changedTouches.screenX;
-            let touchEndY = e.changedTouches.screenY;
-            let diffX = touchEndX - touchStartX;
-            let diffY = touchEndY - touchStartY;
+            let touchEndX = e.changedTouches.screenX; let touchEndY = e.changedTouches.screenY;
+            let diffX = touchEndX - touchStartX; let diffY = touchEndY - touchStartY;
             if (Math.max(Math.abs(diffX), Math.abs(diffY)) < 30) return;
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (diffX > 0) move(1, 0); else move(-1, 0);
-            } else {
-                if (diffY > 0) move(0, 1); else move(0, -1);
-            }
+            if (Math.abs(diffX) > Math.abs(diffY)) { if (diffX > 0) move(1, 0); else move(-1, 0); } 
+            else { if (diffY > 0) move(0, 1); else move(0, -1); }
         }, { passive: true });
 
         setInterval(saveLocalData, 2000);
