@@ -71,23 +71,34 @@
         let level = 1;
         let p = { x: 1, y: 1 };
         let currentSkin = '🚴'; 
+        let currentMap = [];
 
-        const maps = {
-            1: [
-                ['W','W','W','W','W','W','W','W','W','W'],
-                ['W','E','E','W','M','E','E','E','M','W'],
-                ['W','W','E','W','E','W','W','W','E','W'],
-                ['W','E','E','E','E','E','E','W','E','W'],
-                ['W','E','W','W','W','W','E','W','E','W'],
-                ['W','M','W','E','E','E','E','E','E','W'],
-                ['W','E','W','E','W','W','W','W','E','W'],
-                ['W','E','E','E','W','M','E','E','E','W'],
-                ['W','W','W','E','E','E','W','E','F','W'],
-                ['W','W','W','W','W','W','W','W','W','W']
-            ]
-        };
-
-        let currentMap = JSON.parse(JSON.stringify(maps[1]));
+        // Полностью автоматическая генерация лабиринта 10х10 без внешних файлов
+        function generateLevel() {
+            currentMap = [];
+            for (let y = 0; y < 10; y++) {
+                let row = [];
+                for (let x = 0; x < 10; x++) {
+                    // Создаем стены по краям
+                    if (y === 0 || y === 9 || x === 0 || x === 9) {
+                        row.push('W');
+                    } else {
+                        // Случайные перегородки внутри, кроме стартовой зоны курьера
+                        if (Math.random() < 0.25 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
+                            row.push('W');
+                        } else {
+                            // Случайно раскидываем монетки на пустые клетки
+                            row.push(Math.random() < 0.15 ? 'M' : 'E');
+                        }
+                    }
+                }
+                currentMap.push(row);
+            }
+            // Гарантируем чистый проход и ставим финиш в правый нижний угол
+            currentMap[1][1] = 'E';
+            currentMap[8][8] = 'F';
+            p = { x: 1, y: 1 };
+        }
 
         function draw() {
             const container = document.getElementById('maze-grid');
@@ -96,7 +107,7 @@
             for (let y = 0; y < 10; y++) {
                 for (let x = 0; x < 10; x++) {
                     const cell = document.createElement('div');
-                    cell.className = 'cell ' + currentMap[y][x];
+                    cell.className = 'cell ' + (currentMap[y][x] === 'M' || currentMap[y][x] === 'F' ? 'E' : currentMap[y][x]);
                     
                     if (x === p.x && y === p.y) {
                         cell.innerText = currentSkin;
@@ -128,9 +139,10 @@
                 if (currentMap[p.y][p.x] === 'F') {
                     alert("Посылка доставлена! Заработок +100$");
                     wallet += 100;
+                    level += 1;
                     document.getElementById('money-txt').innerText = wallet;
-                    currentMap = JSON.parse(JSON.stringify(maps[1])); 
-                    p = { x: 1, y: 1 };
+                    document.getElementById('level-txt').innerText = level;
+                    generateLevel();
                 }
                 draw();
             }
@@ -159,6 +171,8 @@
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') move(1, 0);
         });
 
+        // Запуск
+        generateLevel();
         draw();
     </script>
 </body>
