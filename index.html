@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <title>Офисный Курьер</title>
+    <script src="https://telegram.org"></script>
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #1e1e24; font-family: sans-serif; color: #fff; text-align: center; user-select: none; }
+        #game-container { margin: 10px auto; display: flex; justify-content: center; }
+        .ui-panel { background: #2a2a35; padding: 10px; margin: 10px auto; width: 320px; border-radius: 8px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .money { color: #f1c40f; } .level { color: #3498db; }
+        .controls { display: grid; grid-template-columns: repeat(3, 65px); grid-template-rows: repeat(2, 65px); gap: 10px; justify-content: center; margin-top: 10px; }
+        .btn { background: #34495e; color: white; border: none; border-radius: 12px; font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px #2c3e50; }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 #2c3e50; }
+        .btn-up { grid-column: 2; } .btn-left { grid-column: 1; grid-row: 2; } .btn-down { grid-column: 2; grid-row: 2; } .btn-right { grid-column: 3; grid-row: 2; }
+    </style>
+</head>
+<body>
+
+    <div class="ui-panel">
+        <div>💵 Баксы: <span id="money-txt" class="money">0</span>$</div>
+        <div>📍 Офис: <span id="level-txt" class="level">1</span></div>
+    </div>
+
+    <div id="game-container"></div>
+
+    <div class="controls">
+        <button class="btn btn-up" id="up-btn">▲</button>
+        <button class="btn btn-left" id="left-btn">◀</button>
+        <button class="btn btn-down" id="down-btn">▼</button>
+        <button class="btn btn-right" id="right-btn">▶</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let wallet = 0;
+        let player;
+        let keys;
+        let sceneContext;
+        let pGrid = { x: 1, y: 1 };
+        const TILE_SIZE = 32;
+
+        // Карта лабиринта, защищенная от искажений редактора
+        const mazeGrid = JSON.parse('[[1,1,1,1,1,1,1,1,1,1],[1,0,0,1,2,0,0,0,2,1],[1,1,0,1,0,1,1,1,0,1],[1,0,0,0,0,0,0,1,0,1],[1,0,1,1,1,1,0,1,0,1],[1,2,1,0,0,0,0,0,0,1],[1,0,1,0,1,1,1,1,0,1],[1,0,0,0,1,2,0,0,0,1],[1,1,1,0,0,0,1,0,3,1],[1,1,1,1,1,1,1,1,1,1]]');
+
+        const config = {
+            type: Phaser.AUTO,
+            width: 320,
+            height: 320,
+            parent: 'game-container',
+            backgroundColor: '#111116',
+            scene: { create: create, update: update }
+        };
+
+        const game = new Phaser.Game(config);
+
+        function create() {
+            sceneContext = this;
+            
+            for (let r = 0; r < mazeGrid.length; r++) {
+                for (let c = 0; c < mazeGrid[r].length; c++) {
+                    let tileType = mazeGrid[r][c];
+                    let x = c * TILE_SIZE + TILE_SIZE / 2;
+                    let y = r * TILE_SIZE + TILE_SIZE / 2;
+
+                    if (tileType === 1) {
+                        this.add.rectangle(x, y, TILE_SIZE - 2, TILE_SIZE - 2, 0x34495e);
+                    } else if (tileType === 2) {
+                        this.add.text(x, y, '💵', { fontSize: '18px' }).setOrigin(0.5);
+                    } else if (tileType === 3) {
+                        this.add.text(x, y, '🏢', { fontSize: '18px' }).setOrigin(0.5);
+                    }
+                }
+            }
+
+            player = this.add.text(
+                pGrid.x * TILE_SIZE + TILE_SIZE / 2, 
+                pGrid.y * TILE_SIZE + TILE_SIZE / 2, 
+                '🏃‍♂️', 
+                { fontSize: '20px' }
+            ).setOrigin(0.5);
+
+            keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D');
+
+            document.getElementById('up-btn').onclick = () => moveCourier(0, -1);
+            document.getElementById('left-btn').onclick = () => moveCourier(-1, 0);
+            document.getElementById('down-btn').onclick = () => moveCourier(0, 1);
+            document.getElementById('right-btn').onclick = () => moveCourier(1, 0);
+        }
+
+        function update() {
+            if (Phaser.Input.Keyboard.JustDown(keys.UP) || Phaser.Input.Keyboard.JustDown(keys.W)) moveCourier(0, -1);
+            if (Phaser.Input.Keyboard.JustDown(keys.DOWN) || Phaser.Input.Keyboard.JustDown(keys.S)) moveCourier(0, 1);
+            if (Phaser.Input.Keyboard.JustDown(keys.LEFT) || Phaser.Input.Keyboard.JustDown(keys.A)) moveCourier(-1, 0);
+            if (Phaser.Input.Keyboard.JustDown(keys.RIGHT) || Phaser.Input.Keyboard.JustDown(keys.D)) moveCourier(1, 0);
+        }
+
+        function moveCourier(dx, dy) {
+            let nX = pGrid.x + dx;
+            let nY = pGrid.y + dy;
+
+            if (mazeGrid[nY] && mazeGrid[nY][nX] !== 1) {
+                pGrid.x = nX;
+                pGrid.y = nY;
+
+                player.x = pGrid.x * TILE_SIZE + TILE_SIZE / 2;
+                player.y = pGrid.y * TILE_SIZE + TILE_SIZE / 2;
+
+                if (mazeGrid[pGrid.y][pGrid.x] === 2) {
+                    wallet += 50;
+                    mazeGrid[pGrid.y][pGrid.x] = 0;
+                    document.getElementById('money-txt').innerText = wallet;
+                    
+                    let children = sceneContext.children.list;
+                    for (let i = 0; i < children.length; i++) {
+                        if (children[i].text === '💵' && children[i].x === player.x && children[i].y === player.y) {
+                            children[i].destroy();
+                            break;
+                        }
+                    }
+                }
+
+                if (mazeGrid[pGrid.y][pGrid.x] === 3) {
+                    alert("Посылка доставлена! Вы заработали +100$");
+                    wallet += 100;
+                    document.getElementById('money-txt').innerText = wallet;
+                    location.reload();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
