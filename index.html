@@ -95,7 +95,7 @@
         let timeLeft = 15; 
         let timerInterval = null; 
 
-        // Инициализация аудио-контекста браузера
+        // Инициализация аудио
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
 
@@ -103,7 +103,6 @@
             if (!audioCtx) audioCtx = new AudioCtx();
         }
 
-        // Генерация синтезированных звуков
         function playSound(type) {
             initAudio();
             if (!audioCtx) return;
@@ -113,21 +112,21 @@
             osc.connect(gain);
             gain.connect(audioCtx.destination);
 
-            if (type === 'step') { // Короткий глухой стук шага
+            if (type === 'step') { 
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(120, audioCtx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.08);
                 gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
                 gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.08);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.08);
-            } else if (type === 'coin') { // Шелест/звон баксов
+            } else if (type === 'coin') { 
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(800, audioCtx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.12);
                 gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
                 gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.12);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.12);
-            } else if (type === 'tick') { // Опасный писк таймера
+            } else if (type === 'tick') { 
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
@@ -136,7 +135,7 @@
             }
         }
 
-        // СИНХРОНИЗАЦИЯ: Загрузка данных сотрудника из БД
+        // ЗАГРУЗКА ИЗ БД
         async function loadDataFromDB() {
             try {
                 const res = await fetch(`${SERVER_URL}/get_player/${userId}`);
@@ -144,16 +143,15 @@
                 wallet = data.coins || 0;
                 toolsCount = data.item1_count || 0;
                 document.getElementById('money-txt').innerText = wallet;
-                generateLevel();
-                draw();
+                document.getElementById('tools-txt').innerText = toolsCount;
             } catch (e) {
                 console.log("Сервер недоступен, играем автономно");
-                generateLevel();
-                draw();
             }
+            generateLevel();
+            draw();
         }
 
-        // СИНХРОНИЗАЦИЯ: Отправка прогресса на сервер
+        // СОХРАНЕНИЕ В БД
         async function saveDataToDB() {
             try {
                 await fetch(`${SERVER_URL}/save_player`, {
@@ -166,7 +164,9 @@
                         item1_count: toolsCount
                     })
                 });
-            } catch (e) { console.log("Ошибка сохранения в БД"); }
+            } catch (e) { 
+                console.log("Ошибка сохранения в БД"); 
+            }
         }
 
         function generateLevel() {
@@ -189,8 +189,8 @@
                 }
                 currentMap.push(row);
             }
-            currentMap = 'E';
-            currentMap = 'F';
+            currentMap[1][1] = 'E';
+            currentMap[8][8] = 'F';
             p = { x: 1, y: 1 };
             resetTimer(); 
         }
@@ -200,13 +200,14 @@
             timerInterval = setInterval(() => {
                 timeLeft--;
                 const timerTxt = document.getElementById('timer-txt');
-                timerTxt.innerText = timeLeft;
-                
-                if (timeLeft <= 5) {
-                    timerTxt.parentElement.classList.add('timer-danger');
-                    playSound('tick'); // Пищим, если дедлайн горит
-                } else {
-                    timerTxt.parentElement.classList.remove('timer-danger');
+                if (timerTxt) {
+                    timerTxt.innerText = timeLeft;
+                    if (timeLeft <= 5) {
+                        timerTxt.parentElement.classList.add('timer-danger');
+                        playSound('tick'); 
+                    } else {
+                        timerTxt.parentElement.classList.remove('timer-danger');
+                    }
                 }
 
                 if (timeLeft <= 0) {
@@ -262,6 +263,7 @@
                 if (toolsCount > 0) {
                     toolsCount--;
                     currentMap[y][x] = 'E';
+                    document.getElementById('tools-txt').innerText = toolsCount;
                     showToast("🧱 Квартал расчищен под дорогу!");
                     draw();
                     saveDataToDB();
@@ -273,10 +275,12 @@
 
         function showToast(text, color = "#2ecc71") {
             const toast = document.getElementById('toast');
-            toast.innerText = text;
-            toast.style.background = color;
-            toast.classList.add('show');
-            setTimeout(() => { toast.classList.remove('show'); }, 1500);
+            if (toast) {
+                toast.innerText = text;
+                toast.style.background = color;
+                toast.classList.add('show');
+                setTimeout(() => { toast.classList.remove('show'); }, 1500);
+            }
         }
 
         function move(dx, dy) {
@@ -286,14 +290,14 @@
             if (currentMap[ny] && currentMap[ny][nx] !== 'W' && currentMap[ny][nx] !== 'T') {
                 p.x = nx;
                 p.y = ny;
-                playSound('step'); // Звук движения курьера
+                playSound('step'); 
 
                 if (currentMap[p.y][p.x] === 'M') {
                     wallet += 50;
                     currentMap[p.y][p.x] = 'E';
                     document.getElementById('money-txt').innerText = wallet;
                     showToast("💵 Посылка подобрана! +50$");
-                    playSound('coin'); // Шелест денег
+                    playSound('coin'); 
                     saveDataToDB();
                 }
 
@@ -314,6 +318,7 @@
                 wallet -= 50;
                 toolsCount++;
                 document.getElementById('money-txt').innerText = wallet;
+                document.getElementById('tools-txt').innerText = toolsCount;
                 showToast("🔑 Получен допуск к сносу преград!");
                 updateShop();
                 saveDataToDB();
@@ -329,24 +334,29 @@
                 document.getElementById(`buy-${id}`).disabled = true;
                 showToast("💼 Имидж курьера обновлен!");
                 draw();
-        saveDataToDB();
-    }
-}
+                saveDataToDB();
+            }
+        }
 
-function updateShop() {
-    document.getElementById('buy-tool').disabled = wallet < 50;
-    document.getElementById('buy-skin').disabled = wallet < 150 && document.getElementById('buy-skin').innerText !== "Одето";
-}
+        function updateShop() {
+            const buyToolBtn = document.getElementById('buy-tool');
+            const buySkinBtn = document.getElementById('buy-skin');
+            if (buyToolBtn) buyToolBtn.disabled = wallet < 50;
+            if (buySkinBtn) buySkinBtn.disabled = wallet < 150 && buySkinBtn.innerText !== "Одето";
+        }
 
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'ц') move(0, -1);
-    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'ы') move(0, 1);
-    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') move(-1, 0);
-    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') move(1, 0);
-});
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'ц') move(0, -1);
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'ы') move(0, 1);
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') move(-1, 0);
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') move(1, 0);
+        });
 
-// Каждые 5 секунд автоматически бэкапим баланс на всякий случай
-setInterval(saveDataToDB, 4000);
+        // Автобэкап каждые 2 секунды
+        setInterval(saveDataToDB, 4000);
 
-// Старт игры через подгрузку из БД
-loadDataFromDB();
+        // Старт игры
+        loadDataFromDB();
+    </script>
+</body>
+</html>
