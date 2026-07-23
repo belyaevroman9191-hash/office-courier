@@ -417,12 +417,19 @@
         }
 
         function copyRecordCode() {
+            // Формируем код сохранения
             let code = btoa(JSON.stringify({ l: level, w: wallet, t: toolsCount, p: purchasedItems }));
-            navigator.clipboard.writeText(code).then(() => {
-                showToast("Код сохранения скопирован! 📋");
-            }).catch(() => {
-                showToast("Ошибка копирования! ❌");
-            });
+            
+            // Если игра открыта в Telegram, отправляем данные боту автоматически
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.sendData(code); // Само отправляет текст в чат
+                window.Telegram.WebApp.close();       // Автоматически закрывает игру
+            } else {
+                // Оставляем обычное копирование, если тестируете в обычном браузере
+                navigator.clipboard.writeText(code).then(() => {
+                    showToast("Код сохранения скопирован! 📋");
+                });
+            }
         }
 
         // Автоматическое сохранение прогресса в LocalStorage
