@@ -466,7 +466,6 @@
                 }
             }
         }
-
         // Свайпы
         window.addEventListener('touchstart', e => {
             touchStartX = e.changedTouches.screenX;
@@ -494,7 +493,7 @@
             }
         }, { passive: true });
 
-        // Управление клавиатурой
+        // Клавиатура
         window.addEventListener('keydown', e => {
             if (isShredderActive) return;
             let targetX = p.x;
@@ -521,3 +520,4 @@
     </script>
 </body>
 </html>
+
