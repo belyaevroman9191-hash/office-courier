@@ -115,293 +115,294 @@
         let timerInterval = null; 
         let currentTax = 50; 
         let shredClicks = 0; 
+        let isShredderActive = false;
 
-        let touchStartX = 0; let touchStartY = 0;
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        let audioCtx = null;
-        function initAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
+        let touchStartX = 0;
+        let touchStartY = 0;
 
-        function playSound(type) {
-            initAudio(); if (!audioCtx) return;
-            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            if (type === 'step') {
-                osc.type = 'triangle'; osc.frequency.setValueAtTime(120, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.08);
-            } else if (type === 'coin') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(900, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.12);
-            } else if (type === 'tick') {
-                osc.type = 'square'; osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.04);
-            } else if (type === 'gameover') {
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-                osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.5);
-                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
-            } else if (type === 'shred') { 
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(180, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
-            }
-        }
+        const purchasedItems = { skin: false, scooter: false };
 
-        // ФУНКЦИЯ ШИФРОВАНИЯ РЕКОРДА ДЛЯ ОФИСНОГО ЧАТА
-        function copyRecordCode() {
-            if (wallet < 0) { showToast("❌ Нельзя выдать код с долгами!", "#e74c3c"); return; }
-            
-            // Простейший алгоритм шифрования, чтобы коллеги не накручивали цифры руками
-            let code = `🏆курьер_${level}L_${wallet * 3 + 7}X`;
-            
-            // Копируем строчку в буфер обмена
-            navigator.clipboard.writeText(code).then(() => {
-                showToast("📋 Код рекорда скопирован! Отправь его в чат.");
-            }).catch(() => {
-                // Запасной вариант для старых браузеров
-                alert(`Ваш код рекорда (скопируйте его): ${code}`);
-            });
-        }
         function generateLevel() {
             currentMap = [];
-            let wallChance = 0.14 + (level * 0.01);
-            if (wallChance > 0.22) wallChance = 0.22;
-
             for (let y = 0; y < 10; y++) {
                 let row = [];
                 for (let x = 0; x < 10; x++) {
-                    if (y === 0 || y === 9 || x === 0 || x === 9) {
-                        row.push('W'); 
+                    if (x === 0 || x === 9 || y === 0 || y === 9) {
+                        row.push('W');
+                    } else if (x === 1 && y === 1) {
+                        row.push('E');
+                    } else if (x === 8 && y === 8) {
+                        row.push('E');
                     } else {
                         let rand = Math.random();
-                        if (rand < wallChance && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
-                            row.push('W'); 
-                        } else if (rand >= wallChance && rand < wallChance + 0.07 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
-                            row.push('T'); 
-                        } else if (rand >= wallChance + 0.07 && rand < wallChance + 0.22 && !(x === 1 && y === 1) && !(x === 8 && y === 8)) {
-                            row.push('M'); 
-                        } else {
-                            row.push('E'); 
-                        }
+                        if (rand < 0.22) row.push('W');
+                        else if (rand < 0.28) row.push('T');
+                        else row.push('E');
                     }
                 }
                 currentMap.push(row);
             }
-            currentMap = 'E';
-            currentMap = 'F';
             p = { x: 1, y: 1 };
+            renderGrid();
             resetTimer();
         }
 
-        function startTimer() {
-            if (timerInterval) clearInterval(timerInterval);
+        function renderGrid() {
+            const container = document.getElementById('maze-grid');
+            container.innerHTML = '';
+            
+            if (isShredderActive) {
+                container.style.display = 'none';
+                return;
+            } else {
+                container.style.display = 'grid';
+            }
+
+            for (let y = 0; y < 10; y++) {
+                for (let x = 0; x < 10; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = `cell ${currentMap[y][x]}`;
+                    
+                    if (x === p.x && y === p.y) {
+                        cell.innerText = currentSkin;
+                    } else if (x === 8 && y === 8) {
+                        cell.innerText = '🏢';
+                    }
+
+                    cell.onclick = () => handleCellClick(x, y);
+                    container.appendChild(cell);
+                }
+            }
+        }
+        function handleCellClick(x, y) {
+            if (isShredderActive) return;
+            if (currentMap[y][x] === 'W' && toolsCount > 0) {
+                currentMap[y][x] = 'E';
+                toolsCount--;
+                updateUI();
+                renderGrid();
+                showToast("Стена снесена мастер-ключом! 🛠️");
+                return;
+            }
+            
+            let dx = Math.abs(x - p.x);
+            let dy = Math.abs(y - p.y);
+            if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+                if (currentMap[y][x] !== 'W') {
+                    p.x = x;
+                    p.y = y;
+                    
+                    if (currentMap[y][x] === 'T') {
+                        wallet -= 15;
+                        currentMap[y][x] = 'E';
+                        showToast("Врезался в кусты! Потерял -15$ 🌳");
+                    }
+                    
+                    checkWin();
+                    renderGrid();
+                }
+            }
+        }
+
+        function checkWin() {
+            if (p.x === 8 && p.y === 8) {
+                let reward = 100 + (level * 15);
+                wallet += reward;
+                level++;
+                showToast(`Доставка выполнена! Получено +${reward}$ 🎉`);
+                generateLevel();
+                updateUI();
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            let bonus = 0;
+            if (purchasedItems.scooter) bonus = 6;
+            else if (purchasedItems.skin) bonus = 3;
+            
+            timeLeft = baseTime + bonus;
+            const timerEl = document.getElementById('timer-txt');
+            timerEl.parentElement.classList.remove('timer-danger');
+            timerEl.innerText = timeLeft;
+
             timerInterval = setInterval(() => {
                 timeLeft--;
-                const timerTxt = document.getElementById('timer-txt');
-                if (timerTxt) {
-                    timerTxt.innerText = timeLeft;
-                    if (timeLeft <= 5) {
-                        timerTxt.parentElement.className = 'timer-container timer-danger';
-                        playSound('tick');
-                    } else {
-                        timerTxt.parentElement.className = 'timer-container';
-                    }
+                timerEl.innerText = timeLeft;
+
+                if (timeLeft <= 5) {
+                    timerEl.parentElement.classList.add('timer-danger');
                 }
+
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    handleTaxPayment(false); 
+                    handleTimeout();
                 }
             }, 1000);
         }
 
-        function resetTimer() {
-            let bonusTime = 0;
-            if (currentSkin === '🚴') bonusTime = 3;
-            if (currentSkin === '🛴') bonusTime = 6;
-            
-            timeLeft = baseTime + bonusTime;
-            const timerTxt = document.getElementById('timer-txt');
-            if (timerTxt) {
-                timerTxt.innerText = timeLeft;
-                timerTxt.parentElement.className = 'timer-container';
-            }
-            startTimer();
-        }
-
-        function handleTaxPayment(isSuccessClose) {
-            currentTax = 40 + (level * 15); 
-            if (isSuccessClose) {
-                wallet += 120; level++;
-                showToast(`🏁 Доставлено! +120$. Налог района -${currentTax}$`);
-            } else {
-                showToast(`⏰ Опоздание! Премии нет. Налог района -${currentTax}$`, "#e74c3c");
-            }
-
+        function handleTimeout() {
             wallet -= currentTax;
-            const moneyTxt = document.getElementById('money-txt');
-            if(moneyTxt) { moneyTxt.innerText = wallet + "$"; moneyTxt.className = wallet < 0 ? "money-debt" : "money"; }
-            if(document.getElementById('lvl-txt')) document.getElementById('lvl-txt').innerText = level;
-
-            if (wallet <= -500) {
-                clearInterval(timerInterval); playSound('gameover');
-                document.getElementById('maze-grid').style.display = 'none';
-                document.getElementById('taxi-btn').style.display = 'none';
-                document.getElementById('shredder-screen').style.display = 'block';
-                shredClicks = 0;
-                document.getElementById('shred-count').innerText = "0";
-                document.getElementById('shred-progress').style.width = "0%";
-                return; 
-            }
-            saveLocalData(); generateLevel(); draw();
-        }
-        function clickShredder() {
-            shredClicks++; playSound('shred');
-            const emoji = document.getElementById('shred-emoji');
-            if(emoji) { emoji.classList.add('shredder-active'); setTimeout(() => emoji.classList.remove('shredder-active'), 100); }
-            document.getElementById('shred-count').innerText = shredClicks;
-            document.getElementById('shred-progress').style.width = shredClicks + "%";
-
-            if (shredClicks >= 100) {
-                wallet = 0; level = 1; toolsCount = 0; currentSkin = '🏃‍♂️';
-                localStorage.setItem('courier_skin_bought', 'false'); localStorage.setItem('courier_scooter_bought', 'false');
-                const moneyTxt = document.getElementById('money-txt');
-                if(moneyTxt) { moneyTxt.innerText = wallet + "$"; moneyTxt.className = "money"; }
-                if(document.getElementById('lvl-txt')) document.getElementById('lvl-txt').innerText = level;
-                if(document.getElementById('tools-txt')) document.getElementById('tools-txt').innerText = toolsCount;
-                
-                document.getElementById('shredder-screen').style.display = 'none';
-                document.getElementById('maze-grid').style.display = 'grid';
-                document.getElementById('taxi-btn').style.display = 'inline-block';
-                showToast("💼 Долг списан! Вас вернули на работу.");
-                saveLocalData(); generateLevel(); draw();
-            }
-        }
-
-        function draw() {
-            const container = document.getElementById('maze-grid');
-            if (!container) return; container.innerHTML = '';
-            if (!currentMap || currentMap.length === 0 || !currentMap) { generateLevel(); }
+            showToast(`Время вышло! Штраф от компании: -${currentTax}$ 📉`);
+            currentTax = Math.min(currentTax + 25, 200);
             
-            for (let y = 0; y < 10; y++) {
-                for (let x = 0; x < 10; x++) {
-                    const cell = document.createElement('div');
-                    let type = (currentMap[y] && currentMap[y][x]) ? currentMap[y][x] : 'E';
-                    cell.className = 'cell ' + (type === 'M' || type === 'F' ? 'E' : type);
-                    cell.onclick = () => breakWall(x, y);
-                    if (x === p.x && y === p.y) { cell.innerText = currentSkin; }
-                    else if (type === 'M') { cell.innerText = '💵'; }
-                    else if (type === 'F') { cell.innerText = '🏁'; }
-                    container.appendChild(cell);
-                }
+            if (wallet <= -500) {
+                activateShredder();
+            } else {
+                generateLevel();
+                updateUI();
             }
-            updateShop();
         }
 
         function triggerRestart() {
-            wallet -= 30; const moneyTxt = document.getElementById('money-txt');
-            if(moneyTxt) { moneyTxt.innerText = wallet + "$"; if (wallet < 0) { moneyTxt.className = "money-debt"; } }
-            if (wallet <= -500) { handleTaxPayment(false); return; }
-            generateLevel(); draw();
-            showToast("🚕 Вызвали такси! Штраф диспетчера -30$.", "#3498db");
-        }
-
-        function breakWall(x, y) {
-            if (currentMap[y] && (currentMap[y][x] === 'W' || currentMap[y][x] === 'T') && x > 0 && x < 9 && y > 0 && y < 9) {
-                if (toolsCount > 0) {
-                    toolsCount--; currentMap[y][x] = 'E';
-                    const toolsTxt = document.getElementById('tools-txt'); if(toolsTxt) toolsTxt.innerText = toolsCount;
-                    showToast("🧱 Квартал расчищен!"); draw(); saveLocalData();
-                } else { showToast("❌ Нужен Мастер-Ключ!", "#e74c3c"); }
-            }
-        }
-
-        function showToast(text, color = "#2ecc71") {
-            const toast = document.getElementById('toast');
-            if (toast) { toast.innerText = text; toast.style.background = color; toast.classList.add('show'); setTimeout(() => { toast.classList.remove('show'); }, 1200); }
-        }
-
-        function move(dx, dy) {
-            if (wallet <= -500) return;
-            let nx = p.x + dx; let ny = p.y + dy;
-            if (currentMap[ny] && currentMap[ny][nx] !== 'W' && currentMap[ny][nx] !== 'T') {
-                p.x = nx; p.y = ny; playSound('step');
-                if (currentMap[p.y][p.x] === 'M') {
-                    wallet += 25; currentMap[p.y][p.x] = 'E'; 
-                    const moneyTxt = document.getElementById('money-txt');
-                    if(moneyTxt) { moneyTxt.innerText = wallet + "$"; if (wallet >= 0) moneyTxt.className = "money"; }
-                    showToast("💵 Чек подобран! +25$"); playSound('coin'); saveLocalData();
-                }
-                if (currentMap[p.y][p.x] === 'F') { playSound('coin'); handleTaxPayment(true); }
-                draw();
+            if (wallet >= 30) {
+                wallet -= 30;
+                showToast("Вызвано такси, карта обновлена! 🚕");
+                generateLevel();
+                updateUI();
+            } else {
+                showToast("Недостаточно денег для вызова такси! ❌");
             }
         }
 
         function buyTool() {
-            if (wallet < 0) { showToast("❌ Нельзя покупать в долг!", "#e74c3c"); return; }
             if (wallet >= 100) {
-                wallet -= 100; toolsCount++; document.getElementById('money-txt').innerText = wallet + "$";
-                const toolsTxt = document.getElementById('tools-txt'); if(toolsTxt) toolsTxt.innerText = toolsCount;
-                showToast("🔑 Получен Мастер-Ключ!"); updateShop(); saveLocalData();
+                wallet -= 100;
+                toolsCount++;
+                updateUI();
+                showToast("Куплен 1 Мастер-Ключ! 🔑");
+            } else {
+                showToast("Недостаточно средств! ❌");
             }
         }
 
-        function buyItem(id, price, emoji) {
-            if (wallet < 0) { showToast("❌ Нельзя покупать в долг!", "#e74c3c"); return; }
-            if (wallet >= price) {
-                wallet -= price; document.getElementById('money-txt').innerText = wallet + "$";
-                currentSkin = emoji; localStorage.setItem(`courier_${id}_bought`, 'true');
-                showToast("💼 Транспорт куплен! Время раундов увеличено!"); draw(); saveLocalData();
+        function buyItem(type, cost, emoji) {
+            if (wallet >= cost) {
+                wallet -= cost;
+                purchasedItems[type] = true;
+                currentSkin = emoji;
+                
+                document.getElementById(`buy-${type === 'skin' ? 'skin' : 'scooter'}`).disabled = true;
+                document.getElementById(`buy-${type === 'skin' ? 'skin' : 'scooter'}`).innerText = "Куплено";
+                
+                updateUI();
+                renderGrid();
+                resetTimer();
+                showToast("Транспорт успешно обновлен! 🚀");
+            } else {
+                showToast("Недостаточно денег на этот транспорт! ❌");
             }
         }
 
-        function updateShop() {
-            const b1 = document.getElementById('buy-tool'); const b2 = document.getElementById('buy-skin'); const b3 = document.getElementById('buy-scooter');
-            if (b1) b1.disabled = wallet < 100;
-            if (b2) { b2.disabled = wallet < 600 || localStorage.getItem('courier_skin_bought') === 'true'; if (localStorage.getItem('courier_skin_bought') === 'true') b2.innerText = "Куплено"; }
-            if (b3) { b3.disabled = wallet < 1500 || localStorage.getItem('courier_scooter_bought') === 'true'; if (localStorage.getItem('courier_scooter_bought') === 'true') b3.innerText = "Куплено"; }
+        function activateShredder() {
+            isShredderActive = true;
+            clearInterval(timerInterval);
+            shredClicks = 0;
+            document.getElementById('shred-count').innerText = "0";
+            document.getElementById('shred-progress').style.width = "0%";
+            document.getElementById('shredder-screen').style.display = 'block';
+            renderGrid();
         }
 
-        function loadLocalData() {
-            wallet = parseInt(localStorage.getItem('courier_wallet')) || 0;
-            toolsCount = parseInt(localStorage.getItem('courier_tools')) || 0;
-            level = parseInt(localStorage.getItem('courier_level')) || 1;
-            if (localStorage.getItem('courier_scooter_bought') === 'true') currentSkin = '🛴';
-            else if (localStorage.getItem('courier_skin_bought') === 'true') currentSkin = '🚴';
-            else currentSkin = '🏃‍♂️';
+        function clickShredder() {
+            if (!isShredderActive) return;
+            shredClicks++;
+            
+            const emojiEl = document.getElementById('shred-emoji');
+            emojiEl.classList.add('shredder-active');
+            setTimeout(() => emojiEl.classList.remove('shredder-active'), 150);
+
+            document.getElementById('shred-count').innerText = shredClicks;
+            let percent = Math.min((shredClicks / 100) * 100, 100);
+            document.getElementById('shred-progress').style.width = `${percent}%`;
+
+            if (shredClicks >= 100) {
+                isShredderActive = false;
+                wallet = 0;
+                currentTax = 50;
+                document.getElementById('shredder-screen').style.display = 'none';
+                showToast("Отработка завершена! Долг списан. 🛠️");
+                generateLevel();
+                updateUI();
+            }
+        }
+
+        function updateUI() {
             const moneyTxt = document.getElementById('money-txt');
-            if(moneyTxt) { moneyTxt.innerText = wallet + "$"; if (wallet < 0) moneyTxt.className = "money-debt"; }
-            if(document.getElementById('lvl-txt')) document.getElementById('lvl-txt').innerText = level;
-            const toolsTxt = document.getElementById('tools-txt'); if(toolsTxt) toolsTxt.innerText = toolsCount;
-            currentTax = 40 + (level * 15);
-            generateLevel(); draw();
+            moneyTxt.innerText = `${wallet}$`;
+            if (wallet < 0) {
+                moneyTxt.className = "money-debt";
+            } else {
+                moneyTxt.className = "money";
+            }
+            document.getElementById('lvl-txt').innerText = level;
+            document.getElementById('tools-txt').innerText = toolsCount;
+            document.getElementById('taxi-btn').disabled = isShredderActive;
         }
 
-        function saveLocalData() {
-            localStorage.setItem('courier_wallet', wallet); localStorage.setItem('courier_tools', toolsCount);
-            localStorage.setItem('courier_level', level); localStorage.setItem('courier_skin', currentSkin);
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            toast.innerText = text;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
         }
 
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'ц') move(0, -1);
-            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'ы') move(0, 1);
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ф') move(-1, 0);
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'в') move(1, 0);
-        });
+        function copyRecordCode() {
+            let code = btoa(JSON.stringify({ l: level, w: wallet, t: toolsCount, p: purchasedItems }));
+            navigator.clipboard.writeText(code).then(() => {
+                showToast("Код сохранения скопирован! 📋");
+            }).catch(() => {
+                showToast("Ошибка копирования! ❌");
+            });
+        }
 
-        window.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches.screenX; touchStartY = e.changedTouches.screenY; }, { passive: true });
-        window.addEventListener('touchend', (e) => {
-            let touchEndX = e.changedTouches.screenX; let touchEndY = e.changedTouches.screenY;
-            let diffX = touchEndX - touchStartX; let diffY = touchEndY - touchStartY;
-            if (Math.max(Math.abs(diffX), Math.abs(diffY)) < 30) return;
-            if (Math.abs(diffX) > Math.abs(diffY)) { if (diffX > 0) move(1, 0); else move(-1, 0); } 
-            else { if (diffY > 0) move(0, 1); else move(0, -1); }
+        // Сенсорное управление (Свайпы)
+        window.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
         }, { passive: true });
 
-        setInterval(saveLocalData, 2000);
-        loadLocalData();
+        window.addEventListener('touchend', e => {
+            if (isShredderActive) return;
+            let dx = e.changedTouches[0].screenX - touchStartX;
+            let dy = e.changedTouches[0].screenY - touchStartY;
+            
+            if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
+            
+            let targetX = p.x;
+            let targetY = p.y;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                targetX = dx > 0 ? p.x + 1 : p.x - 1;
+            } else {
+                targetY = dy > 0 ? p.y + 1 : p.y - 1;
+            }
+
+            if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) {
+                handleCellClick(targetX, targetY);
+            }
+        }, { passive: true });
+
+        // Управление клавиатурой
+        window.addEventListener('keydown', e => {
+            if (isShredderActive) return;
+            let targetX = p.x;
+            let targetY = p.y;
+            
+            if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') targetY--;
+            else if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') targetY++;
+            else if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') targetX--;
+            else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') targetX++;
+            else return;
+
+            if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) {
+                handleCellClick(targetX, targetY);
+            }
+        });
+
+        // Старт игры
+        generateLevel();
+        updateUI();
     </script>
 </body>
 </html>
