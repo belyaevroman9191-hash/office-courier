@@ -21,8 +21,8 @@
         .code-btn { background: #9b59b6; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; box-shadow: 0 2px #8e44ad; }
         .code-btn:active { transform: translateY(1px); box-shadow: 0 0 #8e44ad; }
 
-        #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.7); border: 2px solid #34495e; }
-        .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
+        #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.7); border: 2px solid #34495e; box-sizing: content-box; }
+        .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; box-sizing: border-box; }
         .W { background: #57606f; position: relative; } 
         .W::after { content: "🏢"; font-size: 16px; position: absolute; }
         .E { background: #2f3542; border: 0.5px solid #1e222b; } 
@@ -122,28 +122,22 @@
 
         const purchasedItems = { skin: false, scooter: false };
 
-        // 1. Добавляем новый класс стиля для монеток в блок <style> (вставьте это к остальным классам .W, .E, .T)
-        // .C { background: #2f3542; position: relative; border: 0.5px solid #1e222b; }
-        // .C::after { content: "💵"; font-size: 16px; position: absolute; }
-
-        // 2. Обновленная генерация уровня (теперь с шансом 15% на пустых клетках появятся деньги)
         function generateLevel() {
             currentMap = [];
             for (let y = 0; y < 10; y++) {
                 let row = [];
                 for (let x = 0; x < 10; x++) {
                     if (x === 0 || x === 9 || y === 0 || y === 9) {
-                        row.push('W'); // Стены
+                        row.push('W');
                     } else if (x === 1 && y === 1) {
-                        row.push('E'); // Спавн игрока
+                        row.push('E');
                     } else if (x === 8 && y === 8) {
-                        row.push('E'); // Офис финиша
+                        row.push('E');
                     } else {
                         let rand = Math.random();
-                        if (rand < 0.22) row.push('W'); // Здание
-                        else if (rand < 0.28) row.push('T'); // Кусты
-                        else if (rand < 0.43) row.push('C'); // 💵 НОВОЕ: Монетка (бабки) на карте!
-                        else row.push('E'); // Пусто
+                        if (rand < 0.22) row.push('W');
+                        else if (rand < 0.28) row.push('T');
+                        else row.push('E');
                     }
                 }
                 currentMap.push(row);
@@ -153,7 +147,33 @@
             resetTimer();
         }
 
-        // 3. Обновленная логика перемещения курьера (сбор денег при шаге)
+        function renderGrid() {
+            const container = document.getElementById('maze-grid');
+            container.innerHTML = '';
+            
+            if (isShredderActive) {
+                container.style.display = 'none';
+                return;
+            } else {
+                container.style.display = 'grid';
+            }
+
+            for (let y = 0; y < 10; y++) {
+                for (let x = 0; x < 10; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = `cell ${currentMap[y][x]}`;
+                    
+                    if (x === p.x && y === p.y) {
+                        cell.innerText = currentSkin;
+                    } else if (x === 8 && y === 8) {
+                        cell.innerText = '🏢';
+                    }
+
+                    cell.onclick = () => handleCellClick(x, y);
+                    container.appendChild(cell);
+                }
+            }
+        }
         function handleCellClick(x, y) {
             if (isShredderActive) return;
             if (currentMap[y][x] === 'W' && toolsCount > 0) {
@@ -161,7 +181,6 @@
                 toolsCount--;
                 updateUI();
                 renderGrid();
-                if (typeof playSound === 'function') playSound('win');
                 showToast("Стена снесена мастер-ключом! 🛠️");
                 return;
             }
@@ -173,27 +192,14 @@
                     p.x = x;
                     p.y = y;
                     
-                    // Хэндлер наезда на объекты
                     if (currentMap[y][x] === 'T') {
                         wallet -= 15;
                         currentMap[y][x] = 'E';
-                        if (typeof playSound === 'function') playSound('hit');
                         showToast("Врезался в кусты! Потерял -15$ 🌳");
-                    } 
-                    else if (currentMap[y][x] === 'C') { // 💵 НАСТУПИЛ НА БАБКИ
-                        let coinReward = 20 + Math.floor(Math.random() * 21); // Случайно от 20$ до 40$
-                        wallet += coinReward;
-                        currentMap[y][x] = 'E'; // Убираем монетку с карты
-                        if (typeof playSound === 'function') playSound('win'); // Приятный звук подбора
-                        showToast(`Подобрал заначку! +${coinReward}$ 💵`);
-                    }
-                    else {
-                        if (typeof playSound === 'function') playSound('move');
                     }
                     
                     checkWin();
                     renderGrid();
-                    updateUI();
                 }
             }
         }
@@ -284,7 +290,7 @@
                 resetTimer();
                 showToast("Транспорт успешно обновлен! 🚀");
             } else {
-                showToast("Недостаточно денег на этот транспорт! ❌");
+                showToast("Недостаточно денег на этот transport! ❌");
             }
         }
 
@@ -352,14 +358,14 @@
 
         // Сенсорное управление (Свайпы)
         window.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
+            touchStartX = e.changedTouches.screenX;
+            touchStartY = e.changedTouches.screenY;
         }, { passive: true });
 
         window.addEventListener('touchend', e => {
             if (isShredderActive) return;
-            let dx = e.changedTouches[0].screenX - touchStartX;
-            let dy = e.changedTouches[0].screenY - touchStartY;
+            let dx = e.changedTouches.screenX - touchStartX;
+            let dy = e.changedTouches.screenY - touchStartY;
             
             if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
             
