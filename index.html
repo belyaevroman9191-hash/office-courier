@@ -361,7 +361,6 @@
                 showToast("Недостаточно денег на этот транспорт! ❌");
             }
         }
-
         function activateShredder() {
             isShredderActive = true;
             clearInterval(timerInterval);
@@ -398,39 +397,42 @@
 
         function updateUI() {
             const moneyTxt = document.getElementById('money-txt');
-            moneyTxt.innerText = `${wallet}$`;
-            if (wallet < 0) {
-                moneyTxt.className = "money-debt";
-            } else {
-                moneyTxt.className = "money";
+            if (moneyTxt) {
+                moneyTxt.innerText = `${wallet}$`;
+                moneyTxt.className = wallet < 0 ? "money-debt" : "money";
             }
-            document.getElementById('lvl-txt').innerText = level;
-            document.getElementById('tools-txt').innerText = toolsCount;
-            document.getElementById('taxi-btn').disabled = isShredderActive;
+            const lvlTxt = document.getElementById('lvl-txt');
+            if (lvlTxt) lvlTxt.innerText = level;
+            const toolsTxt = document.getElementById('tools-txt');
+            if (toolsTxt) toolsTxt.innerText = toolsCount;
+            const taxiBtn = document.getElementById('taxi-btn');
+            if (taxiBtn) taxiBtn.disabled = isShredderActive;
         }
 
         function showToast(text) {
             const toast = document.getElementById('toast');
-            toast.innerText = text;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2500);
+            if (toast) {
+                toast.innerText = text;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2500);
+            }
         }
 
         function copyRecordCode() {
-            // Формируем код сохранения
             let code = btoa(JSON.stringify({ l: level, w: wallet, t: toolsCount, p: purchasedItems }));
             
-            // Если игра открыта в Telegram, отправляем данные боту автоматически
             if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.sendData(code); // Само отправляет текст в чат
-                window.Telegram.WebApp.close();       // Автоматически закрывает игру
+                window.Telegram.WebApp.sendData(code); 
+                window.Telegram.WebApp.close();       
             } else {
-                // Оставляем обычное копирование, если тестируете в обычном браузере
                 navigator.clipboard.writeText(code).then(() => {
                     showToast("Код сохранения скопирован! 📋");
+                }).catch(() => {
+                    showToast("Ошибка копирования! ❌");
                 });
             }
-        // Автоматическое сохранение прогресса в LocalStorage
+        }
+
         function autoSaveGame() {
             const state = {
                 level: level,
@@ -442,12 +444,10 @@
             localStorage.setItem('city_courier_save', JSON.stringify(state));
         }
 
-        // Загрузка сохраненного прогресса при старте игры
         function autoLoadGame() {
             const savedData = localStorage.getItem('city_courier_save');
             if (savedData) {
                 try {
-                    // Исправлено: используем только правильный JSON.parse
                     const state = JSON.parse(savedData);
                     level = state.level || 1;
                     wallet = state.wallet || 0;
@@ -458,7 +458,6 @@
                     }
                     currentSkin = state.currentSkin || '🏃‍♂️';
 
-                    // Блокируем кнопки в магазине, если транспорт уже куплен
                     if (purchasedItems.skin) {
                         const btn = document.getElementById('buy-skin');
                         if (btn) { btn.disabled = true; btn.innerText = "Куплено"; }
@@ -472,7 +471,7 @@
                 }
             }
         }
-        // Свайпы
+
         window.addEventListener('touchstart', e => {
             touchStartX = e.changedTouches.screenX;
             touchStartY = e.changedTouches.screenY;
@@ -499,7 +498,6 @@
             }
         }, { passive: true });
 
-        // Клавиатура
         window.addEventListener('keydown', e => {
             if (isShredderActive) return;
             let targetX = p.x;
@@ -516,12 +514,10 @@
             }
         });
 
-        // Сначала пробуем загрузить сейв, затем генерируем уровень
         autoLoadGame();
         generateLevel();
         updateUI();
 
-        // Запуск таймера автосохранения каждые 2 секунды (2000 мс)
         setInterval(autoSaveGame, 2000);
     </script>
 </body>
