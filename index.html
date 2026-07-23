@@ -428,7 +428,13 @@
             clearInterval(timerInterval);
             
             if (gameMode === 'survival') {
+                timeLeft = 30;
+                
                 const timerEl = document.getElementById('timer-txt');
+                // Обязательно добавьте эту строку ниже, чтобы убрать красное мигание с прошлой карты:
+                timerEl.parentElement.classList.remove('timer-danger'); 
+                timerEl.innerText = timeLeft; // И эту строку, чтобы обновить цифры на экране сразу, не дожидаясь первой секунды интервала
+        
                 timerInterval = setInterval(() => {
                     timeLeft--;
                     timerEl.innerText = timeLeft;
