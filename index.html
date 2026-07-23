@@ -1,724 +1,489 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
-    <title>Сити-Дропер: Офисный Кризис</title>
-    <script src="https://telegram.org"></script>
-    <style>
-        body { margin: 0; padding: 10px; background-color: #111114; font-family: 'Segoe UI', sans-serif; color: #fff; text-align: center; user-select: none; touch-action: none; }
-        
-        /* Панель выбора режима сложности */
-        .mode-panel { display: flex; justify-content: center; gap: 5px; margin: 0 auto 5px auto; width: 310px; }
-        .mode-btn { flex: 1; border: none; padding: 6px 0; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; background: #2f3542; color: #aaa; transition: all 0.2s; }
-        .mode-btn.active[data-mode="normal"] { background: #2ecc71; color: #fff; box-shadow: 0 0 10px rgba(46,204,113,0.5); }
-        .mode-btn.active[data-mode="hardcore"] { background: #f1c40f; color: #111; box-shadow: 0 0 10px rgba(241,196,15,0.5); }
-        .mode-btn.active[data-mode="nightmare"] { background: #e74c3c; color: #fff; box-shadow: 0 0 10px rgba(231,76,60,0.5); }
-        .mode-btn.active[data-mode="survival"] { background: #9b59b6; color: #fff; box-shadow: 0 0 10px rgba(155,89,182,0.5); }
-
-        .ui-panel { background: #1e1e24; padding: 12px; margin: 0 auto 5px auto; width: 310px; border-radius: 10px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.5); align-items: center; border: 1px solid #2e2e38; font-size: 13px; flex-wrap: wrap; gap: 5px; }
-        .money { color: #2ecc71; text-shadow: 0 0 5px rgba(46,204,113,0.3); }
-        .money-debt { color: #e74c3c; text-shadow: 0 0 5px rgba(231,76,60,0.3); }
-        
-        .timer-container { font-size: 14px; color: #2ecc71; background: rgba(46, 204, 113, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(46, 204, 113, 0.3); }
-        .timer-danger { animation: blink 0.5s infinite alternate; color: #ff4757; background: rgba(231, 76, 60, 0.2); border: 1px solid #ff4757; font-weight: bold; }
-        @keyframes blink { from { opacity: 1; } to { opacity: 0.4; } }
-        
-        .restart-btn { background: #3498db; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
-        .code-btn { background: #9b59b6; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; box-shadow: 0 2px #8e44ad; }
-        .code-btn:active { transform: translateY(1px); box-shadow: 0 0 #8e44ad; }
-
-        #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.7); border: 2px solid #34495e; box-sizing: content-box; }
-        .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; box-sizing: border-box; transition: background 0.1s; }
-        .W { background: #57606f; position: relative; } 
-        .W::after { content: "🏢"; font-size: 16px; position: absolute; }
-        .E { background: #2f3542; border: 0.5px solid #1e222b; } 
-        .T { background: #2ed573; position: relative; } 
-        .T::after { content: "🌳"; font-size: 16px; position: absolute; }
-        .C { background: #2f3542; position: relative; border: 0.5px solid #1e222b; }
-        .C::after { content: "💵"; font-size: 16px; position: absolute; }
-        
-        .P { background: #2f3542; position: relative; border: 0.5px solid #1e222b; }
-        .P::after { content: "👮"; font-size: 16px; position: absolute; }
-        .fog { background: #000000 !important; border: 0.5px solid #111114 !important; }
-        .fog::after { content: "" !important; }
-
-        #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; }
-        #toast.show { top: 20px; }
-        
-        .shop-container { background: #1e1e24; width: 310px; margin: 10px auto; padding: 12px; border-radius: 10px; text-align: left; border: 1px solid #2e2e38; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
-        .shop-title { font-size: 15px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #2e2e38; padding-bottom: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #2e2e38; }
-        .shop-item:last-child { border-bottom: none; }
-        .buy-btn { background: #2ecc71; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; box-shadow: 0 2px #27ae60; }
-        .buy-btn:disabled { background: #2f3542; color: #57606f; cursor: not-allowed; box-shadow: none; }
-
-        #shredder-screen { display: none; background: #1e1e24; width: 320px; margin: 15px auto; padding: 15px; border-radius: 12px; border: 2px dashed #e74c3c; box-shadow: 0 8px 16px rgba(0,0,0,0.5); }
-        .shredder-title { color: #e74c3c; font-size: 16px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
-        .shredder-icon { font-size: 50px; margin: 15px 0; animation: shake 0.3s infinite alternate paused; }
-        .shredder-active { animation-play-state: running; }
-        @keyframes shake { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
-        .progress-container { background: #111114; border-radius: 10px; padding: 3px; width: 100%; box-sizing: border-box; margin: 15px 0; }
-        .progress-bar { background: #e74c3c; height: 12px; border-radius: 8px; width: 0%; transition: width 0.1s; }
-        .shredder-btn { background: #e74c3c; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; width: 100%; box-shadow: 0 4px #c0392b; }
-        .shredder-btn:active { transform: translateY(2px); box-shadow: 0 2px #c0392b; }
-    </style>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+ <title>Сити-Дропер: Офисный Кризис</title>
+ <script src="https://telegram.org"></script>
+ <style>
+ body { margin: 0; padding: 10px; background-color: #111114; font-family: 'Segoe UI', sans-serif; color: #fff; text-align: center; user-select: none; touch-action: none; }
+ .mode-panel { display: flex; justify-content: center; gap: 5px; margin: 0 auto 5px auto; width: 310px; }
+ .mode-btn { flex: 1; border: none; padding: 6px 0; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; background: #2f3542; color: #aaa; transition: all 0.2s; }
+ .mode-btn.active[data-mode="normal"] { background: #2ecc71; color: #fff; box-shadow: 0 0 10px rgba(46,204,113,0.5); }
+ .mode-btn.active[data-mode="hardcore"] { background: #f1c40f; color: #111; box-shadow: 0 0 10px rgba(241,196,15,0.5); }
+ .mode-btn.active[data-mode="nightmare"] { background: #e74c3c; color: #fff; box-shadow: 0 0 10px rgba(231,76,60,0.5); }
+ .mode-btn.active[data-mode="survival"] { background: #9b59b6; color: #fff; box-shadow: 0 0 10px rgba(155,89,182,0.5); }
+ .ui-panel { background: #1e1e24; padding: 12px; margin: 0 auto 5px auto; width: 310px; border-radius: 10px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.5); align-items: center; border: 1px solid #2e2e38; font-size: 13px; flex-wrap: wrap; gap: 5px; }
+ .money { color: #2ecc71; text-shadow: 0 0 5px rgba(46,204,113,0.3); }
+ .money-debt { color: #e74c3c; text-shadow: 0 0 5px rgba(231,76,60,0.3); }
+ .timer-container { font-size: 14px; color: #2ecc71; background: rgba(46, 204, 113, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(46, 204, 113, 0.3); }
+ .timer-danger { animation: blink 0.5s infinite alternate; color: #ff4757; background: rgba(231, 76, 60, 0.2); border: 1px solid #ff4757; font-weight: bold; }
+ @keyframes blink { from { opacity: 1; } to { opacity: 0.4; } }
+ .restart-btn { background: #3498db; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
+ .code-btn { background: #9b59b6; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; box-shadow: 0 2px #8e44ad; }
+ .code-btn:active { transform: translateY(1px); box-shadow: 0 0 #8e44ad; }
+ #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.7); border: 2px solid #34495e; box-sizing: content-box; }
+ .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; box-sizing: border-box; transition: background 0.1s; }
+ .W { background: #57606f; position: relative; } 
+ .W::after { content: "Ἶ"; font-size: 16px; position: absolute; }
+ .E { background: #2f3542; border: 0.5px solid #1e222b; } 
+ .T { background: #2ed573; position: relative; } 
+ .T::after { content: "ἳ"; font-size: 16px; position: absolute; }
+ .C { background: #2f3542; position: relative; border: 0.5px solid #1e222b; }
+ .C::after { content: "Ὃ"; font-size: 16px; position: absolute; }
+ .P { background: #2f3542; position: relative; border: 0.5px solid #1e222b; }
+ .P::after { content: "὆"; font-size: 16px; position: absolute; }
+ .fog { background: #000000 !important; border: 0.5px solid #111114 !important; }
+ .fog::after { content: "" !important; }
+ #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; }
+ #toast.show { top: 20px; }
+ .shop-container { background: #1e1e24; width: 310px; margin: 10px auto; padding: 12px; border-radius: 10px; text-align: left; border: 1px solid #2e2e38; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+ .shop-title { font-size: 15px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #2e2e38; padding-bottom: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+ .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #2e2e38; }
+ .shop-item:last-child { border-bottom: none; }
+ .buy-btn { background: #2ecc71; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; box-shadow: 0 2px #27ae60; }
+ .buy-btn:disabled { background: #2f3542; color: #57606f; cursor: not-allowed; box-shadow: none; }
+ #shredder-screen { display: none; background: #1e1e24; width: 320px; margin: 15px auto; padding: 15px; border-radius: 12px; border: 2px dashed #e74c3c; box-shadow: 0 8px 16px rgba(0,0,0,0.5); }
+ .shredder-title { color: #e74c3c; font-size: 16px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
+ .shredder-icon { font-size: 50px; margin: 15px 0; animation: shake 0.3s infinite alternate paused; }
+ .shredder-active { animation-play-state: running; }
+ @keyframes shake { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+ .progress-container { background: #111114; border-radius: 10px; padding: 3px; width: 100%; box-sizing: border-box; margin: 15px 0; }
+ .progress-bar { background: #e74c3c; height: 12px; border-radius: 8px; width: 0%; transition: width 0.1s; }
+ .shredder-btn { background: #e74c3c; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; width: 100%; box-shadow: 0 4px #c0392b; }
+ .shredder-btn:active { transform: translateY(2px); box-shadow: 0 2px #c0392b; }
+ </style>
 </head>
 <body>
-
-    <div id="toast">Заказ принят! 📦</div>
-
-    <!-- Панель сложности -->
-    <div class="mode-panel">
-        <button class="mode-btn active" data-mode="normal" onclick="changeMode('normal')">Обычный</button>
-        <button class="mode-btn" data-mode="hardcore" onclick="changeMode('hardcore')">Хардкор</button>
-        <button class="mode-btn" data-mode="nightmare" onclick="changeMode('nightmare')">Кошмар</button>
-        <button class="mode-btn" data-mode="survival" onclick="changeMode('survival')">Выживание</button>
-    </div>
-
-    <!-- UI Панель -->
-    <div class="ui-panel">
-        <div>💵 Выручка: <span id="money-txt" class="money">0$</span></div>
-        <div>📈 Лвл: <span id="lvl-txt" style="color: #3498db;">1</span></div>
-        <div>🎒 Ключи: <span id="tools-txt" style="color: #e67e22;">0</span> шт.</div>
-        <div class="timer-container">⏱️ <span id="timer-txt">15</span>с</div>
-        <div style="width: 100%; font-size: 11px; color: #f1c40f; margin-top: 2px;">🏆 Рекорд за карту: <span id="record-txt">0$</span> | На этой карте: <span id="map-collected-txt">0$</span></div>
-        <button class="code-btn" onclick="copyRecordCode()">📋 Код</button>
-        <button class="restart-btn" id="taxi-btn" onclick="triggerRestart()">🚕 Такси (-30$)</button>
-    </div>
-
-    <div id="maze-grid"></div>
-
-    <!-- Экран отработки / звонка Холодочку -->
-    <div id="shredder-screen">
-        <div class="shredder-title" id="shred-title">🚨 Отработка за долги! 🚨</div>
-        <div id="shred-desc" style="font-size: 12px; color: #aaa; min-height: 32px;">Вы задолжали более -500$. Прозвоните 100 мамонтов, чтобы полностью списать долг и вернуться к заказам!</div>
-        <div class="shredder-icon" id="shred-emoji">📞</div>
-        <div style="font-size: 13px; font-weight: bold;">Выполнено кликов: <span id="shred-count">0</span> / <span id="shred-max">100</span></div>
-        <div class="progress-container">
-            <div class="progress-bar" id="shred-progress"></div>
-        </div>
-        <button class="shredder-btn" id="shred-btn" onclick="clickShredder()">📞 Позвонить холодку</button>
-    </div>
-
-    <!-- Магазин апгрейдов -->
-    <div class="shop-container">
-        <div class="shop-title">🏪 Элитный Автосалон (Прокачка)</div>
-        <div class="shop-item">
-            <div>
-                <div style="font-weight:bold; font-size: 13px;">🔑 Мастер-Ключ</div>
-                <div style="font-size:11px; color:#aaa;">Снос 1 здания кликом мыши</div>
-            </div>
-            <button class="buy-btn" id="buy-tool" onclick="buyTool()">100$</button>
-        </div>
-        <div class="shop-item">
-            <div>
-                <div style="font-weight:bold; font-size: 13px;">🚴 Скоростной Велосипед</div>
-                <div style="font-size:11px; color:#aaa;">Дает +3 секунды к таймеру раунда</div>
-            </div>
-            <button class="buy-btn" id="buy-skin" onclick="buyItem('skin', 600, '🚴')">600$</button>
-        </div>
-        <div class="shop-item">
-            <div>
-                <div style="font-weight:bold; font-size: 13px;">🛴 Электросамокат Киберпанк</div>
-                <div style="font-size:11px; color:#aaa;">Дает +6 секунд к таймеру раунда</div>
-            </div>
-            <button class="buy-btn" id="buy-scooter" onclick="buyItem('scooter', 1500, '🛴')">1500$</button>
-        </div>
-    </div>
-    <script>
-        const tg = window.Telegram?.WebApp;
-        if (tg && typeof tg.expand === 'function') tg.expand();
-
-        let wallet = 0;
-        let toolsCount = 0;
-        let p = { x: 1, y: 1 };
-        let currentSkin = '🏃‍♂️'; 
-        let currentMap = [];
-        
-        let level = 1;
-        let baseTime = 15; 
-        let timeLeft = 15; 
-        let timerInterval = null; 
-        let currentTax = 50; 
-        let shredClicks = 0; 
-        let isShredderActive = false;
-
-        let touchStartX = 0;
-        let touchStartY = 0;
-
-        const purchasedItems = { skin: false, scooter: false };
-
-        // Переменные хардкорных режимов и рекордов выручки
-        let gameMode = 'normal'; 
-        let maxShredClicks = 100; 
-        let shredReason = 'debt'; 
-        let maxMapRecord = 0; 
-        let currentMapCollected = 0; 
-
-        // Синтезатор звуков
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = AudioContext ? new AudioContext() : null;
-
-        function playSound(type) {
-            if (!audioCtx) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            if (type === 'move') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(250, audioCtx.currentTime + 0.06);
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.06);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.06);
-            } 
-            else if (type === 'coin') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(500, audioCtx.currentTime);
-                osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-            }
-            else if (type === 'hit') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(120, audioCtx.currentTime);
-                osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.2);
-                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-            }
-            else if (type === 'win') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-                osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
-            }
-            else if (type === 'siren') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(500, audioCtx.currentTime);
-                osc.frequency.linearRampToValueAtTime(250, audioCtx.currentTime + 0.4);
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
-            }
-        }
-
-        function changeMode(mode) {
-            if (isShredderActive) return;
-            gameMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
-            });
-            if(gameMode === 'survival') {
-                timeLeft = 30; 
-            }
-            showToast(`Режим изменен: ${mode.toUpperCase()} ⚙️`);
-            generateLevel();
-            updateUI();
-        }
-        function generateLevel() {
-            currentMap = [];
-            currentMapCollected = 0; 
-
-            let wallChance = 0.25; 
-            let coinChance = 0.10; 
-
-            if (gameMode === 'normal') {
-                baseTime = Math.max(10, 15 - Math.floor(level / 12)); 
-            } else if (gameMode === 'hardcore') {
-                baseTime = 10;
-                coinChance = 0.14; 
-            } else if (gameMode === 'nightmare') {
-                baseTime = 12;
-                coinChance = 0.08; 
-                wallChance = 0.27; 
-            }
-
-            for (let y = 0; y < 10; y++) {
-                let row = [];
-                for (let x = 0; x < 10; x++) {
-                    if (x === 0 || x === 9 || y === 0 || y === 9) {
-                        row.push('W');
-                    } else if (x === 1 && y === 1) {
-                        row.push('E');
-                    } else if (x === 8 && y === 8) {
-                        row.push('E');
-                    } else {
-                        let rand = Math.random();
-                        if (rand < wallChance) row.push('W');
-                        else if (rand < wallChance + 0.06) row.push('T');
-                        else if (rand < wallChance + 0.06 + coinChance) row.push('C');
-                        else row.push('E');
-                    }
-                }
-                currentMap.push(row);
-            }
-
-            // Алгоритм расстановки копов
-            if (gameMode !== 'normal') {
-                let policeCount = gameMode === 'nightmare' ? 3 : 2;
-                let spawned = 0;
-                while (spawned < policeCount) {
-                    let rx = Math.floor(Math.random() * 8) + 1;
-                    let ry = Math.floor(Math.random() * 8) + 1;
-                    if (currentMap[ry][rx] === 'E' && !(rx === 1 && ry === 1) && !(rx === 8 && ry === 8)) {
-                        currentMap[ry][rx] = 'P';
-                        spawned++;
-                    }
-                }
-            }
-
-            p = { x: 1, y: 1 };
-            renderGrid();
-            resetTimer();
-            updateUI();
-        }
-
-        function patrolPolice() {
-            if (gameMode !== 'nightmare' || isShredderActive) return;
-            let policePositions = [];
-            for (let y = 0; y < 10; y++) {
-                for (let x = 0; x < 10; x++) {
-                    if (currentMap[y][x] === 'P') policePositions.push({x, y});
-                }
-            }
-            policePositions.forEach(pos => {
-                let dirs = [{x:0, y:1}, {x:0, y:-1}, {x:1, y:0}, {x:-1, y:0}].sort(() => Math.random() - 0.5);
-                for (let d of dirs) {
-                    let nx = pos.x + d.x;
-                    let ny = pos.y + d.y;
-                    if (currentMap[ny][nx] === 'E' && !(nx === 8 && ny === 8) && !(nx === p.x && ny === p.y)) {
-                        currentMap[pos.y][pos.x] = 'E';
-                        currentMap[ny][nx] = 'P';
-                        break;
-                    } else if (nx === p.x && ny === p.y) {
-                        currentMap[pos.y][pos.x] = 'E';
-                        currentMap[ny][nx] = 'P';
-                        handlePoliceHit(ny, nx);
-                        break;
-                    }
-                }
-            });
-            renderGrid();
-        }
-
-        function renderGrid() {
-            const container = document.getElementById('maze-grid');
-            container.innerHTML = '';
-            
-            if (isShredderActive) {
-                container.style.display = 'none';
-                return;
-            } else {
-                container.style.display = 'grid';
-            }
-
-            for (let y = 0; y < 10; y++) {
-                for (let x = 0; x < 10; x++) {
-                    const cell = document.createElement('div');
-                    let dist = Math.abs(x - p.x) + Math.abs(y - p.y);
-                    
-                    if (gameMode === 'nightmare' && dist > 2) {
-                        cell.className = "cell fog";
-                    } else {
-                        cell.className = `cell ${currentMap[y][x]}`;
-                        if (x === p.x && y === p.y) {
-                            cell.innerText = currentSkin;
-                        } else if (x === 8 && y === 8) {
-                            cell.innerText = '🏢';
-                        }
-                    }
-                    cell.onclick = () => handleCellClick(x, y);
-                    container.appendChild(cell);
-                }
-            }
-        }
-        function handleCellClick(x, y) {
-            if (isShredderActive) return;
-            if (currentMap[y][x] === 'W' && toolsCount > 0) {
-                currentMap[y][x] = 'E';
-                toolsCount--;
-                updateUI();
-                renderGrid();
-                playSound('win');
-                showToast("Стена снесена мастер-ключом! 🛠️");
-                return;
-            }
-            
-            let dx = Math.abs(x - p.x);
-            let dy = Math.abs(y - p.y);
-            if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
-                if (currentMap[y][x] !== 'W') {
-                    p.x = x;
-                    p.y = y;
-                    
-                    if (currentMap[y][x] === 'T') {
-                        wallet -= 15;
-                        currentMap[y][x] = 'E';
-                        playSound('hit');
-                        showToast("Врезался в кусты! Потерял -15$ 🌳");
-                    } 
-                    else if (currentMap[y][x] === 'C') { 
-                        let multiplier = 1;
-                        if (gameMode === 'hardcore') multiplier = 2;
-                        if (gameMode === 'nightmare') multiplier = 3;
-
-                        let baseBonus = 25 + Math.floor(Math.random() * 21); 
-                        let bonusMoney = baseBonus * multiplier;
-
-                        wallet += bonusMoney;
-                        currentMapCollected += bonusMoney;
-
-                        if (currentMapCollected > maxMapRecord) {
-                            maxMapRecord = currentMapCollected;
-                        }
-
-                        currentMap[y][x] = 'E';
-                        playSound('coin');
-                        showToast(`Подобрал заначку! +${bonusMoney}$ 💵 (x${multiplier})`);
-                    } 
-                    else if (currentMap[y][x] === 'P') {
-                        handlePoliceHit(y, x);
-                    }
-                    else {
-                        playSound('move');
-                    }
-                    
-                    checkWin();
-                    renderGrid();
-                    updateUI();
-                }
-            }
-        }
-
-        function handlePoliceHit(y, x) {
-            wallet -= 20000;
-            currentMap[y][x] = 'E';
-            playSound('siren');
-            
-            if (wallet <= -500) {
-                shredReason = 'police';
-                maxShredClicks = 200;
-                activateShredder();
-            } else {
-                showToast("Вас поймала полиция! Штраф -20,000$ 👮🚨");
-            }
-        }
-
-        function checkWin() {
-            if (p.x === 8 && p.y === 8) {
-                let reward = 100 + (level * 15);
-                wallet += reward;
-                level++;
-                playSound('win');
-                showToast(`Доставка выполнена! Получено +${reward}$ 🎉`);
-                generateLevel();
-                updateUI();
-            }
-        }
-
-        function resetTimer() {
-            clearInterval(timerInterval);
-            
-            if (gameMode === 'survival') {
-                timeLeft = 30;
-                
-                const timerEl = document.getElementById('timer-txt');
-                // Обязательно добавьте эту строку ниже, чтобы убрать красное мигание с прошлой карты:
-                timerEl.parentElement.classList.remove('timer-danger'); 
-                timerEl.innerText = timeLeft; // И эту строку, чтобы обновить цифры на экране сразу, не дожидаясь первой секунды интервала
-        
-                timerInterval = setInterval(() => {
-                    timeLeft--;
-                    timerEl.innerText = timeLeft;
-                    if (timeLeft <= 5) timerEl.parentElement.classList.add('timer-danger');
-                    if (timeLeft <= 0) {
-                        clearInterval(timerInterval);
-                        handleTimeout();
-                    }
-                }, 1000);
-                return;
-            }
-
-            let bonus = 0;
-            if (purchasedItems.scooter) bonus = 6;
-            else if (purchasedItems.skin) bonus = 3;
-            
-            timeLeft = baseTime + bonus;
-            const timerEl = document.getElementById('timer-txt');
-            timerEl.parentElement.classList.remove('timer-danger');
-            timerEl.innerText = timeLeft;
-
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                timerEl.innerText = timeLeft;
-
-                if (gameMode === 'nightmare') patrolPolice();
-
-                if (timeLeft <= 5) {
-                    timerEl.parentElement.classList.add('timer-danger');
-                }
-
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    handleTimeout();
-                }
-            }, 1000);
-        }
-
-        function handleTimeout() {
-            let mult = Math.min(Math.floor(level / 5), 4) + 1; 
-            let finalTax = currentTax * mult;
-
-            wallet -= finalTax;
-            playSound('hit');
-            showToast(`Время вышло! Штраф от компании: -${finalTax}$ 📉`);
-            currentTax = Math.min(currentTax + 25, 200);
-            
-            if (wallet <= -500) {
-                shredReason = 'debt';
-                maxShredClicks = 100;
-                activateShredder();
-            } else {
-                generateLevel();
-                updateUI();
-            }
-        }
-
-        function triggerRestart() {
-            if (wallet >= 30) {
-                wallet -= 30;
-                showToast("Вызвано такси, карта обновлена! 🚕");
-                generateLevel();
-                updateUI();
-            } else {
-                showToast("Недостаточно денег для вызова такси! ❌");
-            }
-        }
-
-        function buyTool() {
-            if (wallet >= 100) {
-                wallet -= 100;
-                toolsCount++;
-                updateUI();
-                showToast("Куплен 1 Мастер-Ключ! 🔑");
-            } else {
-                showToast("Недостаточно средств! ❌");
-            }
-        }
-
-        function buyItem(type, cost, emoji) {
-            if (wallet >= cost) {
-                wallet -= cost;
-                purchasedItems[type] = true;
-                currentSkin = emoji;
-                document.getElementById(`buy-${type === 'skin' ? 'skin' : 'scooter'}`).disabled = true;
-                document.getElementById(`buy-${type === 'skin' ? 'skin' : 'scooter'}`).innerText = "Куплено";
-                updateUI();
-                renderGrid();
-                resetTimer();
-                showToast("Транспорт успешно обновлен! 🚀");
-            } else {
-                showToast("Недостаточно денег на этот транспорт! ❌");
-            }
-        }
-        function activateShredder() {
-            isShredderActive = true;
-            clearInterval(timerInterval);
-            shredClicks = 0;
-
-            const titleEl = document.getElementById('shred-title');
-            const descEl = document.getElementById('shred-desc');
-            const btnEl = document.getElementById('shred-btn');
-            const emojiEl = document.getElementById('shred-emoji');
-
-            if (shredReason === 'police') {
-                titleEl.innerText = "👮 Задержан полицией! 🚨";
-                descEl.innerText = "У вас не нашлось 20,000$ на оплату штрафа. Позвоните Холодку 200 раз, чтобы он прислал адвоката и выкупил вас!";
-                btnEl.innerText = "📞 Позвонить Холодку";
-                emojiEl.innerText = "👨‍💼";
-            } else {
-                titleEl.innerText = "🚨 Отработка за долги! 🚨";
-                descEl.innerText = "Вы задолжали более -500$. Прозвоните 100 мамонтов, чтобы полностью списать долг компании и вернуться к заказам!";
-                btnEl.innerText = "📞 Прозвонить мамонта";
-                emojiEl.innerText = "📞";
-            }
-
-            document.getElementById('shred-max').innerText = maxShredClicks;
-            document.getElementById('shred-count').innerText = "0";
-            document.getElementById('shred-progress').style.width = "0%";
-            document.getElementById('shredder-screen').style.display = 'block';
-            renderGrid();
-        }
-
-        function clickShredder() {
-            if (!isShredderActive) return;
-            shredClicks++;
-            playSound('hit');
-            
-            const emojiEl = document.getElementById('shred-emoji');
-            emojiEl.classList.add('shredder-active');
-            setTimeout(() => emojiEl.classList.remove('shredder-active'), 150);
-
-            document.getElementById('shred-count').innerText = shredClicks;
-            let percent = Math.min((shredClicks / maxShredClicks) * 100, 100);
-            document.getElementById('shred-progress').style.width = `${percent}%`;
-
-            if (shredClicks >= maxShredClicks) {
-                isShredderActive = false;
-                document.getElementById('shredder-screen').style.display = 'none';
-                
-                if (shredReason === 'police') {
-                    wallet = 100; 
-                    showToast("Холодок решил вопрос! Вы свободны и готовы к работе. 🚀");
-                } else {
-                    wallet = 0;
-                    currentTax = 50;
-                    showToast("Отработка завершена! Долг полностью списан. 🛠️");
-                }
-                
-                generateLevel();
-                updateUI();
-            }
-        }
-
-        function updateUI() {
-            const moneyTxt = document.getElementById('money-txt');
-            if (moneyTxt) {
-                moneyTxt.innerText = `${wallet}$`;
-                moneyTxt.className = wallet < 0 ? "money-debt" : "money";
-            }
-            const lvlTxt = document.getElementById('lvl-txt');
-            if (lvlTxt) lvlTxt.innerText = level;
-            const toolsTxt = document.getElementById('tools-txt');
-            if (toolsTxt) toolsTxt.innerText = toolsCount;
-            const taxiBtn = document.getElementById('taxi-btn');
-            if (taxiBtn) taxiBtn.disabled = isShredderActive;
-
-            document.getElementById('record-txt').innerText = `${maxMapRecord}$`;
-            document.getElementById('map-collected-txt').innerText = `${currentMapCollected}$`;
-        }
-
-        function showToast(text) {
-            const toast = document.getElementById('toast');
-            if (toast) {
-                toast.innerText = text;
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 2500);
-            }
-        }
-
-        function copyRecordCode() {
-            let code = btoa(JSON.stringify({ l: level, w: wallet, t: toolsCount, p: purchasedItems, m: gameMode, r: maxMapRecord }));
-            navigator.clipboard.writeText(code).then(() => {
-                showToast("Код сохранения скопирован! 📋");
-            }).catch(() => {
-                showToast("Ошибка копирования! ❌");
-            });
-        }
-
-        function autoLoadGame() {
-            const savedData = localStorage.getItem('city_courier_save');
-            if (savedData) {
-                try {
-                    const state = JSON.parse(savedData);
-                    level = state.level || 1;
-                    wallet = state.wallet || 0;
-                    toolsCount = state.toolsCount || 0;
-                    gameMode = state.gameMode || 'normal';
-                    maxMapRecord = state.maxMapRecord || 0;
-                    if (state.purchasedItems) {
-                        purchasedItems.skin = state.purchasedItems.skin;
-                        purchasedItems.scooter = state.purchasedItems.scooter;
-                    }
-                    currentSkin = state.currentSkin || '🏃‍♂️';
-
-                    document.querySelectorAll('.mode-btn').forEach(btn => {
-                        btn.classList.toggle('active', btn.getAttribute('data-mode') === gameMode);
-                    });
-                } catch (e) {
-                    console.error("Ошибка автозагрузки прогресса", e);
-                }
-            }
-
-            if (purchasedItems.skin) {
-                const btn = document.getElementById('buy-skin');
-                if (btn) { btn.disabled = true; btn.innerText = "Куплено"; }
-            }
-            if (purchasedItems.scooter) {
-                const btn = document.getElementById('buy-scooter');
-                if (btn) { btn.disabled = true; btn.innerText = "Куплено"; }
-            }
-        }
-
-        function autoSaveGame() {
-            const state = { level: level, wallet: wallet, toolsCount: toolsCount, purchasedItems: purchasedItems, currentSkin: currentSkin, gameMode: gameMode, maxMapRecord: maxMapRecord };
-            localStorage.setItem('city_courier_save', JSON.stringify(state));
-        }
-
-        let adminClicks = 0;
-        const lvlContainer = document.getElementById('lvl-txt') ? document.getElementById('lvl-txt').parentElement : null;
-        if (lvlContainer) {
-            lvlContainer.style.cursor = 'pointer';
-            lvlContainer.addEventListener('click', () => {
-                adminClicks++;
-                if (adminClicks >= 3) {
-                    adminClicks = 0;
-                    const code = prompt("🔧 Введите секретный код сохранения из бота:");
-                    if (code) {
-                        try {
-                            const decoded = JSON.parse(atob(code.trim()));
-                            if (decoded && typeof decoded.l !== 'undefined') {
-                                level = parseInt(decoded.l, 10) || 1;
-                                wallet = parseInt(decoded.w, 10) || 0;
-                                toolsCount = parseInt(decoded.t, 10) || 0;
-                                gameMode = decoded.m || 'normal';
-                                maxMapRecord = decoded.r || 0;
-                                if (decoded.p) {
-                                    purchasedItems.skin = !!decoded.p.skin;
-                                    purchasedItems.scooter = !!decoded.p.scooter;
-                                }
-                                autoSaveGame();
-                                changeMode(gameMode);
-                            }
-                        } catch(e) { alert("Неверный формат кода!"); }
-                    }
-                }
-            });
-        }
-
-        window.addEventListener('touchstart', e => { touchStartX = e.changedTouches.screenX; touchStartY = e.changedTouches.screenY; }, { passive: true });
-        window.addEventListener('touchend', e => {
-            if (isShredderActive) return;
-            let dx = e.changedTouches.screenX - touchStartX; let dy = e.changedTouches.screenY - touchStartY;
-            if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
-            let targetX = p.x; let targetY = p.y;
-            if (Math.abs(dx) > Math.abs(dy)) { targetX = dx > 0 ? p.x + 1 : p.x - 1; } else { targetY = dy > 0 ? p.y + 1 : p.y - 1; }
-            if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) { handleCellClick(targetX, targetY); }
-        }, { passive: true });
-
-        window.addEventListener('keydown', e => {
-            if (isShredderActive) return;
-            let targetX = p.x; let targetY = p.y;
-            if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') targetY--;
-            else if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') targetY++;
-            else if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') targetX--;
-            else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') targetX++;
-            else return;
-            if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) { handleCellClick(targetX, targetY); }
-        });
-
-        autoLoadGame();
-        generateLevel();
-        updateUI();
-        setInterval(autoSaveGame, 2000);
-    </script>
+ <div id="toast">Заказ принят! ὎</div>
+ <!-- Панель сложности -->
+ <div class="mode-panel">
+ <button class="mode-btn active" data-mode="normal" onclick="changeMode('normal')">Обычный</button>
+ <button class="mode-btn" data-mode="hardcore" onclick="changeMode('hardcore')">Хардкор</button>
+ <button class="mode-btn" data-mode="nightmare" onclick="changeMode('nightmare')">Кошмар</button>
+ <button class="mode-btn" data-mode="survival" onclick="changeMode('survival')">Выживание</button>
+ </div>
+ <!-- UI Панель -->
+ <div class="ui-panel">
+ <div>Ὃ Выручка: <span id="money-txt" class="money">0$</span></div>
+ <div>Ὄ Лвл: <span id="lvl-txt" style="color: #3498db;">1</span></div>
+ <div>Ἱ Ключи: <span id="tools-txt" style="color: #e67e22;">0</span> шт.</div>
+ <div class="timer-container">⏱️ <span id="timer-txt">15</span>с</div>
+ <div style="width: 100%; font-size: 11px; color: #f1c40f; margin-top: 2px;">Ἴ Рекорд за карту: <span id="record-txt">0$</span> | На этой карте: <span id="map-collected-txt">0$</span></div>
+ <button class="code-btn" onclick="copyRecordCode()">Ὄ Код</button>
+ <button class="restart-btn" id="taxi-btn" onclick="triggerRestart()">Ὡ Такси (-30$)</button>
+ </div>
+ <div id="maze-grid"></div>
+ <!-- Экран отработки -->
+ <div id="shredder-screen">
+ <div class="shredder-title" id="shred-title">Ὢ Отработка за долги! Ὢ</div>
+ <div id="shred-desc" style="font-size: 12px; color: #aaa; min-height: 32px;">Вы задолжали более -500$. Прозвоните 100 мамонтов, чтобы полностью списать долг и вернуться к заказам!</div>
+ <div class="shredder-icon" id="shred-emoji">Ὅ</div>
+ <div style="font-size: 13px; font-weight: bold;">Выполнено кликов: <span id="shred-count">0</span> / <span id="shred-max">100</span></div>
+ <div class="progress-container">
+ <div class="progress-bar" id="shred-progress"></div>
+ </div>
+ <button class="shredder-btn" id="shred-btn" onclick="clickShredder()">Ὅ Позвонить холодочку</button>
+ </div>
+ <!-- Магазин апгрейдов -->
+ <div class="shop-container">
+ <div class="shop-title">Ἶ Элитный Автосалон (Прокачка)</div>
+ <div class="shop-item">
+ <div>
+ <div style="font-weight:bold; font-size: 13px;">Master-Key</div>
+ <div style="font-size:11px; color:#aaa;">Снос 1 здания кликом мыши</div>
+ </div>
+ <button class="buy-btn" id="buy-tool" onclick="buyTool()">100$</button>
+ </div>
+ <div class="shop-item">
+ <div>
+ <div style="font-weight:bold; font-size: 13px;">Скоростной Велосипед</div>
+ <div style="font-size:11px; color:#aaa;">Дает +3 секунды к таймеру раунда</div>
+ </div>
+ <button class="buy-btn" id="buy-skin" onclick="buyItem('skin', 600, 'Ὣ')">600$</button>
+ </div>
+ <div class="shop-item">
+ <div>
+ <div style="font-weight:bold; font-size: 13px;">Электросамокат Киберпанк</div>
+ <div style="font-size:11px; color:#aaa;">Дает +6 секунд к таймеру раунда</div>
+ </div>
+ <button class="buy-btn" id="buy-scooter" onclick="buyItem('scooter', 1500, 'Ὧ')">1500$</button>
+ </div>
+ </div>
+ <script>
+ const tg = window.Telegram?.WebApp;
+ if (tg && typeof tg.expand === 'function') tg.expand();
+ let wallet = 0;
+ let toolsCount = 0;
+ let p = { x: 1, y: 1 };
+ let currentSkin = 'Ἴ‍♂️'; 
+ let currentMap = [];
+ let level = 1;
+ let baseTime = 15; 
+ let timeLeft = 15; 
+ let timerInterval = null; 
+ let currentTax = 50; 
+ let shredClicks = 0; 
+ let isShredderActive = false;
+ let touchStartX = 0;
+ let touchStartY = 0;
+ const purchasedItems = { skin: false, scooter: false };
+ let gameMode = 'normal'; 
+ let maxShredClicks = 100; 
+ let shredReason = 'debt'; 
+ let maxMapRecord = 0; 
+ let currentMapCollected = 0; 
+ const AudioContext = window.AudioContext || window.webkitAudioContext;
+ const audioCtx = AudioContext ? new AudioContext() : null;
+ function playSound(type) {
+ if (!audioCtx) return;
+ if (audioCtx.state === 'suspended') audioCtx.resume();
+ const osc = audioCtx.createOscillator();
+ const gain = audioCtx.createGain();
+ osc.connect(gain); gain.connect(audioCtx.destination);
+ if (type === 'move') {
+ osc.type = 'triangle'; osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+ osc.frequency.exponentialRampToValueAtTime(250, audioCtx.currentTime + 0.06);
+ gain.gain.setValueAtTime(0.08, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.06);
+ osc.start(); osc.stop(audioCtx.currentTime + 0.06);
+ } else if (type === 'coin') {
+ osc.type = 'sine'; osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+ osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.08);
+ gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+ osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+ } else if (type === 'hit') {
+ osc.type = 'sawtooth'; osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+ osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.2);
+ gain.gain.setValueAtTime(0.25, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+ osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+ } else if (type === 'win') {
+ osc.type = 'sine'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+ osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
+ gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+ osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+ } else if (type === 'siren') {
+ osc.type = 'sawtooth'; osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+ osc.frequency.linearRampToValueAtTime(250, audioCtx.currentTime + 0.4);
+ gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+ osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+ }
+ }
+ function changeMode(mode) {
+ if (isShredderActive) return;
+ gameMode = mode;
+ document.querySelectorAll('.mode-btn').forEach(btn => {
+ btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
+ });
+ currentMapCollected = 0; 
+ showToast(`Режим изменен: ${mode.toUpperCase()} ⚙️`);
+ generateLevel();
+ updateUI();
+ }
+ function generateLevel() {
+ // ИСПРАВЛЕНИЕ: В Выживании деньги за уровни КОПЯТСЯ в марафон. В остальных — сброс каждый уровень
+ if (gameMode !== 'survival') {
+ currentMapCollected = 0; 
+ }
+ let wallChance = 0.25; 
+ let coinChance = 0.10; 
+ if (gameMode === 'normal') {
+ baseTime = Math.max(10, 15 - Math.floor(level / 12)); 
+ } else if (gameMode === 'hardcore') {
+ baseTime = 10; coinChance = 0.14; 
+ } else if (gameMode === 'nightmare') {
+ baseTime = 12; coinChance = 0.08; wallChance = 0.27; 
+ } else if (gameMode === 'survival') {
+ baseTime = 30; // Базовое время для выживания
+ }
+ for (let y = 0; y < 10; y++) {
+ let row = [];
+ for (let x = 0; x < 10; x++) {
+ if (x === 0 || x === 9 || y === 0 || y === 9) { row.push('W'); }
+ else if (x === 1 && y === 1) { row.push('E'); }
+ else if (x === 8 && y === 8) { row.push('E'); }
+ else {
+ let rand = Math.random();
+ if (rand < wallChance) row.push('W');
+ else if (rand < wallChance + 0.06) row.push('T');
+ else if (rand < wallChance + 0.06 + coinChance) row.push('C');
+ else row.push('E');
+ }
+ }
+ currentMap.push(row);
+ }
+ if (gameMode !== 'normal' && gameMode !== 'survival') {
+ let policeCount = gameMode === 'nightmare' ? 3 : 2;
+ let spawned = 0;
+ while (spawned < policeCount) {
+ let rx = Math.floor(Math.random() * 8) + 1;
+ let ry = Math.floor(Math.random() * 8) + 1;
+ if (currentMap[ry][rx] === 'E' && !(rx === 1 && ry === 1) && !(rx === 8 && ry === 8)) {
+ currentMap[ry][rx] = 'P'; spawned++;
+ }
+ }
+ }
+ p = { x: 1, y: 1 };
+ renderGrid();
+ resetTimer();
+ updateUI();
+ }
+ function patrolPolice() {
+ if (gameMode !== 'nightmare' || isShredderActive) return;
+ let policePositions = [];
+ for (let y = 0; y < 10; y++) {
+ for (let x = 0; x < 10; x++) { if (currentMap[y][x] === 'P') policePositions.push({x, y}); }
+ }
+ policePositions.forEach(pos => {
+ let dirs = [{x:0, y:1}, {x:0, y:-1}, {x:1, y:0}, {x:-1, y:0}].sort(() => Math.random() - 0.5);
+ for (let d of dirs) {
+ let nx = pos.x + d.x; let ny = pos.y + d.y;
+ if (currentMap[ny][nx] === 'E' && !(nx === 8 && ny === 8) && !(nx === p.x && ny === p.y)) {
+ currentMap[pos.y][pos.x] = 'E'; currentMap[ny][nx] = 'P'; break;
+ } else if (nx === p.x && ny === p.y) {
+ currentMap[pos.y][pos.x] = 'E'; currentMap[ny][nx] = 'P';
+ handlePoliceHit(ny, nx); break;
+ }
+ }
+ });
+ renderGrid();
+ }
+ function renderGrid() {
+ const container = document.getElementById('maze-grid');
+ container.innerHTML = '';
+ if (isShredderActive) { container.style.display = 'none'; return; } 
+ else { container.style.display = 'grid'; }
+ for (let y = 0; y < 10; y++) {
+ for (let x = 0; x < 10; x++) {
+ const cell = document.createElement('div');
+ let dist = Math.abs(x - p.x) + Math.abs(y - p.y);
+ if (gameMode === 'nightmare' && dist > 2) { cell.className = "cell fog"; } 
+ else {
+ cell.className = `cell ${currentMap[y][x]}`;
+ if (x === p.x && y === p.y) { cell.innerText = currentSkin; } 
+ else if (x === 8 && y === 8) { cell.innerText = 'Ἶ'; }
+ }
+ cell.onclick = () => handleCellClick(x, y);
+ container.appendChild(cell);
+ }
+ }
+ }
+ function handleCellClick(x, y) {
+ if (isShredderActive) return;
+ if (currentMap[y][x] === 'W' && toolsCount > 0) {
+ currentMap[y][x] = 'E'; toolsCount--; updateUI(); renderGrid(); playSound('win');
+ showToast("Стена снесена мастер-ключом! Ὦ️"); return;
+ }
+ let dx = Math.abs(x - p.x); let dy = Math.abs(y - p.y);
+ if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+ if (currentMap[y][x] !== 'W') {
+ p.x = x; p.y = y;
+ if (currentMap[y][x] === 'T') {
+ wallet -= 15; currentMap[y][x] = 'E'; playSound('hit');
+ showToast("Врезался в кусты! Потерял -15$ ἳ");
+ } else if (currentMap[y][x] === 'C') { 
+ let multiplier = 1;
+ if (gameMode === 'hardcore') multiplier = 2;
+ if (gameMode === 'nightmare') multiplier = 3;
+ if (gameMode === 'survival') multiplier = 2; // Бонус в выживании
+ let baseBonus = 25 + Math.floor(Math.random() * 21); 
+ let bonusMoney = baseBonus * multiplier;
+ wallet += bonusMoney; currentMapCollected += bonusMoney;
+ if (currentMapCollected > maxMapRecord) { maxMapRecord = currentMapCollected; }
+ currentMap[y][x] = 'E'; playSound('coin');
+ showToast(`Подобрал заначку! +${bonusMoney}$ Ὃ (x${multiplier})`);
+ } else if (currentMap[y][x] === 'P') { handlePoliceHit(y, x); }
+ else { playSound('move'); }
+ checkWin(); renderGrid(); updateUI();
+ }
+ }
+ }
+ function handlePoliceHit(y, x) {
+ wallet -= 20000; currentMap[y][x] = 'E'; playSound('siren');
+ if (wallet <= -500) { shredReason = 'police'; maxShredClicks = 200; activateShredder(); } 
+ else { showToast("Вас поймала полиция! Штраф -20,000$ ὆Ὢ"); }
+ }
+ function checkWin() {
+ if (p.x === 8 && p.y === 8) {
+ let reward = 100 + (level * 15);
+ wallet += reward;
+ currentMapCollected += reward; // ИСПРАВЛЕНИЕ: Теперь финальный бонус уровня ВСЕГДА идет в рекорд сессии/карты!
+ if (currentMapCollected > maxMapRecord) {
+ maxMapRecord = currentMapCollected;
+ }
+ level++;
+ playSound('win');
+ showToast(`Доставка выполнена! Получено +${reward}$ Ἰ`);
+ generateLevel();
+ updateUI();
+ }
+ }
+ function resetTimer() {
+ clearInterval(timerInterval);
+ let bonus = 0;
+ if (purchasedItems.scooter) bonus = 6;
+ else if (purchasedItems.skin) bonus = 3;
+ 
+ // ИСПРАВЛЕНИЕ: Баг таймера закрыт. Переменная получает честные 30 сек + бонусы от транспорта!
+ timeLeft = baseTime + bonus; 
+ 
+ const timerEl = document.getElementById('timer-txt');
+ timerEl.parentElement.classList.remove('timer-danger'); // Сброс мигания при старте карты
+ timerEl.innerText = timeLeft;
+ 
+ timerInterval = setInterval(() => {
+ timeLeft--;
+ timerEl.innerText = timeLeft;
+ if (gameMode === 'nightmare') patrolPolice();
+ if (timeLeft <= 5) { timerEl.parentElement.classList.add('timer-danger'); }
+ if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeout(); }
+ }, 1000);
+ }
+ function handleTimeout() {
+ let mult = Math.min(Math.floor(level / 5), 4) + 1; 
+ let finalTax = currentTax * mult;
+ wallet -= finalTax; playSound('hit');
+ showToast(`Время вышло! Штраф от компании: -${finalTax}$ Ὄ`);
+ currentTax = Math.min(currentTax + 25, 200);
+ if (wallet <= -500) { shredReason = 'debt'; maxShredClicks = 100; activateShredder(); } 
+ else { generateLevel(); updateUI(); }
+ }
+ function triggerRestart() {
+ if (wallet >= 30) { wallet -= 30; showToast("Вызвано такси, карта обновлена! Ὡ"); generateLevel(); updateUI(); } 
+ else { showToast("Недостаточно денег для вызова такси! ❌"); }
+ }
+ function buyTool() {
+ if (wallet >= 100) { wallet -= 100; toolsCount++; updateUI(); showToast("Куплен 1 Мастер-Ключ! ὑ"); } 
+ else { showToast("Недостаточно средств! ❌"); }
+ }
+ function buyItem(type, cost, emoji) {
+ if (wallet >= cost) {
+ wallet -= cost; purchasedItems[type] = true; currentSkin = emoji;
+ document.getElementById(`buy-${type === 'skin' ? 'skin' : 'scooter'}`).disabled = true;
+ document.getElementById(`buy-${type === 'skin' ? 'skin' : 'scooter'}`).innerText = "Куплено";
+ updateUI(); renderGrid(); resetTimer(); showToast("Транспорт успешно обновлен! Ὠ");
+ } else { showToast("Недостаточно денег на этот транспорт! ❌"); }
+ }
+ function activateShredder() {
+ isShredderActive = true;
+ clearInterval(timerInterval);
+ 
+ // ИСПРАВЛЕНИЕ: Игрок проиграл по времени или пойман. Марафон выживания прерван, сбрасываем сессионный счетчик
+ currentMapCollected = 0; 
+ 
+ shredClicks = 0;
+ const titleEl = document.getElementById('shred-title');
+ const descEl = document.getElementById('shred-desc');
+ const btnEl = document.getElementById('shred-btn');
+ const emojiEl = document.getElementById('shred-emoji');
+ if (shredReason === 'police') {
+ titleEl.innerText = "὆ Задержан полицией! Ὢ";
+ descEl.innerText = "У вас не нашлось 20,000$ на оплату штрафа. Позвоните Холодку 200 раз, чтобы он прислал адвоката и выкупил вас!";
+ btnEl.innerText = "Ὅ Позвонить Холодку"; emojiEl.innerText = "὆‍Ὃ";
+ } else {
+ titleEl.innerText = "Ὢ Отработка за долги! Ὢ";
+ descEl.innerText = "Вы задолжали более -500$. Прозвоните 100 мамонтов, чтобы полностью списать долг компании и вернуться к заказам!";
+ btnEl.innerText = "Ὅ Прозвонить мамонта"; emojiEl.innerText = "Ὅ";
+ }
+ document.getElementById('shred-max').innerText = maxShredClicks;
+ document.getElementById('shred-count').innerText = "0";
+ document.getElementById('shred-progress').style.width = "0%";
+ document.getElementById('shredder-screen').style.display = 'block';
+ renderGrid();
+ }
+ function clickShredder() {
+ if (!isShredderActive) return;
+ shredClicks++; playSound('hit');
+ const emojiEl = document.getElementById('shred-emoji');
+ emojiEl.classList.add('shredder-active');
+ setTimeout(() => emojiEl.classList.remove('shredder-active'), 150);
+ document.getElementById('shred-count').innerText = shredClicks;
+ let percent = Math.min((shredClicks / maxShredClicks) * 100, 100);
+ document.getElementById('shred-progress').style.width = `${percent}%`;
+ if (shredClicks >= maxShredClicks) {
+ isShredderActive = false; document.getElementById('shredder-screen').style.display = 'none';
+ if (shredReason === 'police') { wallet = 100; showToast("Холодок решил вопрос! Вы свободны и готовы к работе. Ὠ"); } 
+ else { wallet = 0; currentTax = 50; showToast("Отработка завершена! Долг полностью списан. Ὦ️"); }
+ generateLevel(); updateUI();
+ }
+ }
+ function updateUI() {
+ const moneyTxt = document.getElementById('money-txt');
+ if (moneyTxt) { moneyTxt.innerText = `${wallet}$`; moneyTxt.className = wallet < 0 ? "money-debt" : "money"; }
+ const lvlTxt = document.getElementById('lvl-txt');
+ if (lvlTxt) lvlTxt.innerText = level;
+ const toolsTxt = document.getElementById('tools-txt');
+ if (toolsTxt) toolsTxt.innerText = toolsCount;
+ const taxiBtn = document.getElementById('taxi-btn');
+ if (taxiBtn) taxiBtn.disabled = isShredderActive;
+ document.getElementById('record-txt').innerText = `${maxMapRecord}$`;
+ document.getElementById('map-collected-txt').innerText = `${currentMapCollected}$`;
+ }
+ function showToast(text) {
+ const toast = document.getElementById('toast');
+ if (toast) { toast.innerText = text; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500); }
+ }
+ function copyRecordCode() {
+ let code = btoa(JSON.stringify({ l: level, w: wallet, t: toolsCount, p: purchasedItems, m: gameMode, r: maxMapRecord }));
+ navigator.clipboard.writeText(code).then(() => { showToast("Код сохранения скопирован! Ὄ"); }).catch(() => { showToast("Ошибка копирования! ❌"); });
+ }
+ function autoLoadGame() {
+ const savedData = localStorage.getItem('city_courier_save');
+ if (savedData) {
+ try {
+ const state = JSON.parse(savedData);
+ level = state.level || 1; wallet = state.wallet || 0; toolsCount = state.toolsCount || 0; gameMode = state.gameMode || 'normal'; maxMapRecord = state.maxMapRecord || 0;
+ if (state.purchasedItems) { purchasedItems.skin = state.purchasedItems.skin; purchasedItems.scooter = state.purchasedItems.scooter; }
+ currentSkin = state.currentSkin || 'Ἴ‍♂️';
+ document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.toggle('active', btn.getAttribute('data-mode') === gameMode); });
+ } catch (e) { console.error("Ошибка автозагрузки прогресса", e); }
+ }
+ if (purchasedItems.skin) { const btn = document.getElementById('buy-skin'); if (btn) { btn.disabled = true; btn.innerText = "Куплено"; } }
+ if (purchasedItems.scooter) { const btn = document.getElementById('buy-scooter'); if (btn) { btn.disabled = true; btn.innerText = "Куплено"; } }
+ }
+ function autoSaveGame() {
+ const state = { level: level, wallet: wallet, toolsCount: toolsCount, purchasedItems: purchasedItems, currentSkin: currentSkin, gameMode: gameMode, maxMapRecord: maxMapRecord };
+ localStorage.setItem('city_courier_save', JSON.stringify(state));
+ }
+ const lvlContainer = document.getElementById('lvl-txt') ? document.getElementById('lvl-txt').parentElement : null;
+ if (lvlContainer) {
+ lvlContainer.style.cursor = 'pointer';
+ lvlContainer.addEventListener('click', () => {
+ adminClicks++;
+ if (adminClicks >= 3) {
+ adminClicks = 0; const code = prompt("ὒ Введите секретный код сохранения из бота:");
+ if (code) {
+ try {
+ const decoded = JSON.parse(atob(code.trim()));
+ if (decoded && typeof decoded.l !== 'undefined') {
+ level = parseInt(decoded.l, 10) || 1; wallet = parseInt(decoded.w, 10) || 0; toolsCount = parseInt(decoded.t, 10) || 0; gameMode = decoded.m || 'normal'; maxMapRecord = decoded.r || 0;
+ if (decoded.p) { purchasedItems.skin = !!decoded.p.skin; purchasedItems.scooter = !!decoded.p.scooter; }
+ autoSaveGame(); changeMode(gameMode);
+ }
+ } catch(e) { alert("Неверный формат кода!"); }
+ }
+ }
+ });
+ }
+ window.addEventListener('touchstart', e => { touchStartX = e.changedTouches.screenX; touchStartY = e.changedTouches.screenY; }, { passive: true });
+ window.addEventListener('touchend', e => {
+ if (isShredderActive) return;
+ let dx = e.changedTouches.screenX - touchStartX; let dy = e.changedTouches.screenY - touchStartY;
+ if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
+ let targetX = p.x; let targetY = p.y;
+ if (Math.abs(dx) > Math.abs(dy)) { targetX = dx > 0 ? p.x + 1 : p.x - 1; } else { targetY = dy > 0 ? p.y + 1 : p.y - 1; }
+ if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) { handleCellClick(targetX, targetY); }
+ }, { passive: true });
+ window.addEventListener('keydown', e => {
+ if (isShredderActive) return;
+ let targetX = p.x; let targetY = p.y;
+ if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') targetY--;
+ else if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') targetY++;
+ else if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') targetX--;
+ else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') targetX++;
+ else return;
+ if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) { handleCellClick(targetX, targetY); }
+ });
+ autoLoadGame(); generateLevel(); updateUI(); setInterval(autoSaveGame, 2000);
+ </script>
 </body>
 </html>
