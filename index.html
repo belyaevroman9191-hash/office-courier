@@ -29,6 +29,10 @@
         .T { background: #2ed573; position: relative; } 
         .T::after { content: "🌳"; font-size: 16px; position: absolute; }
         
+        /* Стиль для отображения долларов на карте */
+        .C { background: #2f3542; position: relative; border: 0.5px solid #1e222b; }
+        .C::after { content: "💵"; font-size: 16px; position: absolute; }
+
         #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; }
         #toast.show { top: 20px; }
         .shop-container { background: #1e1e24; width: 310px; margin: 10px auto; padding: 12px; border-radius: 10px; text-align: left; border: 1px solid #2e2e38; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
@@ -122,6 +126,54 @@
 
         const purchasedItems = { skin: false, scooter: false };
 
+        // Встроенный синтезатор звуков без внешних файлов
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = AudioContext ? new AudioContext() : null;
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'move') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(250, audioCtx.currentTime + 0.06);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.06);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.06);
+            } 
+            else if (type === 'coin') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            }
+            else if (type === 'hit') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(30, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+            }
+            else if (type === 'win') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+
+        // Спавн карты: 22% зданий, 6% кустов, 15% заначек с долларами
         function generateLevel() {
             currentMap = [];
             for (let y = 0; y < 10; y++) {
@@ -137,6 +189,7 @@
                         let rand = Math.random();
                         if (rand < 0.22) row.push('W');
                         else if (rand < 0.28) row.push('T');
+                        else if (rand < 0.43) row.push('C'); // Разбрасываем баксы
                         else row.push('E');
                     }
                 }
@@ -181,6 +234,7 @@
                 toolsCount--;
                 updateUI();
                 renderGrid();
+                playSound('win');
                 showToast("Стена снесена мастер-ключом! 🛠️");
                 return;
             }
@@ -195,11 +249,23 @@
                     if (currentMap[y][x] === 'T') {
                         wallet -= 15;
                         currentMap[y][x] = 'E';
+                        playSound('hit');
                         showToast("Врезался в кусты! Потерял -15$ 🌳");
+                    } 
+                    else if (currentMap[y][x] === 'C') { 
+                        let bonusMoney = 25 + Math.floor(Math.random() * 21); 
+                        wallet += bonusMoney;
+                        currentMap[y][x] = 'E';
+                        playSound('coin');
+                        showToast(`Подобрал заначку! +${bonusMoney}$ 💵`);
+                    } 
+                    else {
+                        playSound('move');
                     }
                     
                     checkWin();
                     renderGrid();
+                    updateUI();
                 }
             }
         }
@@ -209,6 +275,7 @@
                 let reward = 100 + (level * 15);
                 wallet += reward;
                 level++;
+                playSound('win');
                 showToast(`Доставка выполнена! Получено +${reward}$ 🎉`);
                 generateLevel();
                 updateUI();
@@ -243,6 +310,7 @@
 
         function handleTimeout() {
             wallet -= currentTax;
+            playSound('hit');
             showToast(`Время вышло! Штраф от компании: -${currentTax}$ 📉`);
             currentTax = Math.min(currentTax + 25, 200);
             
@@ -290,7 +358,7 @@
                 resetTimer();
                 showToast("Транспорт успешно обновлен! 🚀");
             } else {
-                showToast("Недостаточно денег на этот transport! ❌");
+                showToast("Недостаточно денег на этот транспорт! ❌");
             }
         }
 
@@ -307,6 +375,7 @@
         function clickShredder() {
             if (!isShredderActive) return;
             shredClicks++;
+            playSound('hit');
             
             const emojiEl = document.getElementById('shred-emoji');
             emojiEl.classList.add('shredder-active');
@@ -356,7 +425,49 @@
             });
         }
 
-        // Сенсорное управление (Свайпы)
+        // Автоматическое сохранение прогресса в LocalStorage
+        function autoSaveGame() {
+            const state = {
+                level: level,
+                wallet: wallet,
+                toolsCount: toolsCount,
+                purchasedItems: purchasedItems,
+                currentSkin: currentSkin
+            };
+            localStorage.setItem('city_courier_save', JSON.stringify(state));
+        }
+
+        // Загрузка сохраненного прогресса при старте игры
+        function autoLoadGame() {
+            const savedData = localStorage.getItem('city_courier_save');
+            if (savedData) {
+                try {
+                    const state = JSON.loads(savedData) || JSON.parse(savedData);
+                    level = state.level || 1;
+                    wallet = state.wallet || 0;
+                    toolsCount = state.toolsCount || 0;
+                    if (state.purchasedItems) {
+                        purchasedItems.skin = state.purchasedItems.skin;
+                        purchasedItems.scooter = state.purchasedItems.scooter;
+                    }
+                    currentSkin = state.currentSkin || '🏃‍♂️';
+
+                    // Блокируем кнопки в магазине, если транспорт уже куплен
+                    if (purchasedItems.skin) {
+                        const btn = document.getElementById('buy-skin');
+                        if (btn) { btn.disabled = true; btn.innerText = "Куплено"; }
+                    }
+                    if (purchasedItems.scooter) {
+                        const btn = document.getElementById('buy-scooter');
+                        if (btn) { btn.disabled = true; btn.innerText = "Куплено"; }
+                    }
+                } catch (e) {
+                    console.error("Ошибка автозагрузки прогресса", e);
+                }
+            }
+        }
+
+        // Свайпы
         window.addEventListener('touchstart', e => {
             touchStartX = e.changedTouches.screenX;
             touchStartY = e.changedTouches.screenY;
@@ -400,9 +511,13 @@
             }
         });
 
-        // Старт игры
+        // Сначала пробуем загрузить сейв, затем генерируем уровень
+        autoLoadGame();
         generateLevel();
         updateUI();
+
+        // Запуск таймера автосохранения каждые 2 секунды (2000 мс)
+        setInterval(autoSaveGame, 2000);
     </script>
 </body>
 </html>
