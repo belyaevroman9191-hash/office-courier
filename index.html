@@ -419,18 +419,15 @@
         }
 
         function copyRecordCode() {
+            // Формируем код сохранения курьера
             let code = btoa(JSON.stringify({ l: level, w: wallet, t: toolsCount, p: purchasedItems }));
             
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.sendData(code); 
-                window.Telegram.WebApp.close();       
-            } else {
-                navigator.clipboard.writeText(code).then(() => {
-                    showToast("Код сохранения скопирован! 📋");
-                }).catch(() => {
-                    showToast("Ошибка копирования! ❌");
-                });
-            }
+            // Обычное надежное копирование в буфер обмена
+            navigator.clipboard.writeText(code).then(() => {
+                showToast("Код сохранения скопирован! 📋");
+            }).catch(() => {
+                showToast("Ошибка копирования! ❌");
+            });
         }
 
         function autoSaveGame() {
