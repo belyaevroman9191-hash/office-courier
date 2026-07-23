@@ -442,7 +442,8 @@
             const savedData = localStorage.getItem('city_courier_save');
             if (savedData) {
                 try {
-                    const state = JSON.loads(savedData) || JSON.parse(savedData);
+                    // Исправлено: используем только правильный JSON.parse
+                    const state = JSON.parse(savedData);
                     level = state.level || 1;
                     wallet = state.wallet || 0;
                     toolsCount = state.toolsCount || 0;
