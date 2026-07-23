@@ -441,7 +441,38 @@
             localStorage.setItem('city_courier_save', JSON.stringify(state));
         }
 
+        // Умная загрузка прогресса с поддержкой админских кодов из буфера
         function autoLoadGame() {
+            // 1. Сначала проверяем, нет ли в буфере обмена свежего кода от админа
+            if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
+                navigator.clipboard.readText().then(text => {
+                    const cleanText = text.trim();
+                    if (cleanText.length >= 10 && !cleanText.includes(' ')) {
+                        try {
+                            const decodedString = atob(cleanText);
+                            const gameData = JSON.parse(decodedString);
+                            if (gameData && typeof gameData.l !== 'undefined' && typeof gameData.w !== 'undefined') {
+                                // Нашли свежий код! Перезаписываем старый кэш устройства
+                                level = parseInt(gameData.l, 10) || 1;
+                                wallet = parseInt(gameData.w, 10) || 0;
+                                toolsCount = parseInt(gameData.t, 10) || 0;
+                                if (gameData.p) {
+                                    purchasedItems.skin = !!gameData.p.skin;
+                                    purchasedItems.scooter = !!gameData.p.scooter;
+                                }
+                                autoSaveGame(); // Сразу фиксируем в локальную память
+                                updateUI();
+                                renderGrid();
+                                return; // Выходим, так как данные успешно обновились
+                            }
+                        } catch (e) {
+                            // Если в буфере обычный текст, просто игнорируем
+                        }
+                    }
+                }).catch(() => {});
+            }
+
+            // 2. Если в буфере кода нет, стандартно загружаем данные из памяти устройства
             const savedData = localStorage.getItem('city_courier_save');
             if (savedData) {
                 try {
@@ -454,20 +485,22 @@
                         purchasedItems.scooter = state.purchasedItems.scooter;
                     }
                     currentSkin = state.currentSkin || '🏃‍♂️';
-
-                    if (purchasedItems.skin) {
-                        const btn = document.getElementById('buy-skin');
-                        if (btn) { btn.disabled = true; btn.innerText = "Куплено"; }
-                    }
-                    if (purchasedItems.scooter) {
-                        const btn = document.getElementById('buy-scooter');
-                        if (btn) { btn.disabled = true; btn.innerText = "Куплено"; }
-                    }
                 } catch (e) {
                     console.error("Ошибка автозагрузки прогресса", e);
                 }
             }
+
+            // Блокируем кнопки в автосалоне, если транспорт уже куплен
+            if (purchasedItems.skin) {
+                const btn = document.getElementById('buy-skin');
+                if (btn) { btn.disabled = true; btn.innerText = "Куплено"; }
+            }
+            if (purchasedItems.scooter) {
+                const btn = document.getElementById('buy-scooter');
+                if (btn) { btn.disabled = true; btn.innerText = "Куплено"; }
+            }
         }
+
 
         window.addEventListener('touchstart', e => {
             touchStartX = e.changedTouches.screenX;
