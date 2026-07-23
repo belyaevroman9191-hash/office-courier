@@ -419,10 +419,7 @@
         }
 
         function copyRecordCode() {
-            // Формируем код сохранения курьера
             let code = btoa(JSON.stringify({ l: level, w: wallet, t: toolsCount, p: purchasedItems }));
-            
-            // Обычное надежное копирование в буфер обмена
             navigator.clipboard.writeText(code).then(() => {
                 showToast("Код сохранения скопирован! 📋");
             }).catch(() => {
@@ -430,49 +427,8 @@
             });
         }
 
-        function autoSaveGame() {
-            const state = {
-                level: level,
-                wallet: wallet,
-                toolsCount: toolsCount,
-                purchasedItems: purchasedItems,
-                currentSkin: currentSkin
-            };
-            localStorage.setItem('city_courier_save', JSON.stringify(state));
-        }
-
-        // Умная загрузка прогресса с поддержкой админских кодов из буфера
+        // Стабильная и чистая загрузка из LocalStorage устройства
         function autoLoadGame() {
-            // 1. Сначала проверяем, нет ли в буфере обмена свежего кода от админа
-            if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
-                navigator.clipboard.readText().then(text => {
-                    const cleanText = text.trim();
-                    if (cleanText.length >= 10 && !cleanText.includes(' ')) {
-                        try {
-                            const decodedString = atob(cleanText);
-                            const gameData = JSON.parse(decodedString);
-                            if (gameData && typeof gameData.l !== 'undefined' && typeof gameData.w !== 'undefined') {
-                                // Нашли свежий код! Перезаписываем старый кэш устройства
-                                level = parseInt(gameData.l, 10) || 1;
-                                wallet = parseInt(gameData.w, 10) || 0;
-                                toolsCount = parseInt(gameData.t, 10) || 0;
-                                if (gameData.p) {
-                                    purchasedItems.skin = !!gameData.p.skin;
-                                    purchasedItems.scooter = !!gameData.p.scooter;
-                                }
-                                autoSaveGame(); // Сразу фиксируем в локальную память
-                                updateUI();
-                                renderGrid();
-                                return; // Выходим, так как данные успешно обновились
-                            }
-                        } catch (e) {
-                            // Если в буфере обычный текст, просто игнорируем
-                        }
-                    }
-                }).catch(() => {});
-            }
-
-            // 2. Если в буфере кода нет, стандартно загружаем данные из памяти устройства
             const savedData = localStorage.getItem('city_courier_save');
             if (savedData) {
                 try {
@@ -490,7 +446,6 @@
                 }
             }
 
-            // Блокируем кнопки в автосалоне, если транспорт уже куплен
             if (purchasedItems.skin) {
                 const btn = document.getElementById('buy-skin');
                 if (btn) { btn.disabled = true; btn.innerText = "Куплено"; }
@@ -501,55 +456,68 @@
             }
         }
 
+        function autoSaveGame() {
+            const state = { level: level, wallet: wallet, toolsCount: toolsCount, purchasedItems: purchasedItems, currentSkin: currentSkin };
+            localStorage.setItem('city_courier_save', JSON.stringify(state));
+        }
 
-        window.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches.screenX;
-            touchStartY = e.changedTouches.screenY;
-        }, { passive: true });
+        // СЕКРЕТНЫЙ МЕТОД: Активация кода по 3 кликам на текст уровня
+        let adminClicks = 0;
+        const lvlContainer = document.getElementById('lvl-txt') ? document.getElementById('lvl-txt').parentElement : null;
+        if (lvlContainer) {
+            lvlContainer.style.cursor = 'pointer';
+            lvlContainer.addEventListener('click', () => {
+                adminClicks++;
+                if (adminClicks >= 3) {
+                    adminClicks = 0;
+                    const code = prompt("🔧 Введите секретный код сохранения из бота:");
+                    if (code) {
+                        try {
+                            const decoded = JSON.parse(atob(code.trim()));
+                            if (decoded && typeof decoded.l !== 'undefined') {
+                                level = parseInt(decoded.l, 10) || 1;
+                                wallet = parseInt(decoded.w, 10) || 0;
+                                toolsCount = parseInt(decoded.t, 10) || 0;
+                                if (decoded.p) {
+                                    purchasedItems.skin = !!decoded.p.skin;
+                                    purchasedItems.scooter = !!decoded.p.scooter;
+                                }
+                                autoSaveGame();
+                                generateLevel();
+                                updateUI();
+                                showToast("Код успешно применён! ⚡");
+                            }
+                        } catch(e) { alert("Неверный формат кода!"); }
+                    }
+                }
+            });
+        }
 
+        window.addEventListener('touchstart', e => { touchStartX = e.changedTouches.screenX; touchStartY = e.changedTouches.screenY; }, { passive: true });
         window.addEventListener('touchend', e => {
             if (isShredderActive) return;
-            let dx = e.changedTouches.screenX - touchStartX;
-            let dy = e.changedTouches.screenY - touchStartY;
-            
+            let dx = e.changedTouches.screenX - touchStartX; let dy = e.changedTouches.screenY - touchStartY;
             if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
-            
-            let targetX = p.x;
-            let targetY = p.y;
-
-            if (Math.abs(dx) > Math.abs(dy)) {
-                targetX = dx > 0 ? p.x + 1 : p.x - 1;
-            } else {
-                targetY = dy > 0 ? p.y + 1 : p.y - 1;
-            }
-
-            if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) {
-                handleCellClick(targetX, targetY);
-            }
+            let targetX = p.x; let targetY = p.y;
+            if (Math.abs(dx) > Math.abs(dy)) { targetX = dx > 0 ? p.x + 1 : p.x - 1; } else { targetY = dy > 0 ? p.y + 1 : p.y - 1; }
+            if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) { handleCellClick(targetX, targetY); }
         }, { passive: true });
 
         window.addEventListener('keydown', e => {
             if (isShredderActive) return;
-            let targetX = p.x;
-            let targetY = p.y;
-            
+            let targetX = p.x; let targetY = p.y;
             if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') targetY--;
             else if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') targetY++;
             else if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') targetX--;
             else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') targetX++;
             else return;
-
-            if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) {
-                handleCellClick(targetX, targetY);
-            }
+            if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) { handleCellClick(targetX, targetY); }
         });
 
         autoLoadGame();
         generateLevel();
         updateUI();
-
         setInterval(autoSaveGame, 2000);
     </script>
 </body>
 </html>
-
