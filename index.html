@@ -122,22 +122,28 @@
 
         const purchasedItems = { skin: false, scooter: false };
 
+        // 1. Добавляем новый класс стиля для монеток в блок <style> (вставьте это к остальным классам .W, .E, .T)
+        // .C { background: #2f3542; position: relative; border: 0.5px solid #1e222b; }
+        // .C::after { content: "💵"; font-size: 16px; position: absolute; }
+
+        // 2. Обновленная генерация уровня (теперь с шансом 15% на пустых клетках появятся деньги)
         function generateLevel() {
             currentMap = [];
             for (let y = 0; y < 10; y++) {
                 let row = [];
                 for (let x = 0; x < 10; x++) {
                     if (x === 0 || x === 9 || y === 0 || y === 9) {
-                        row.push('W');
+                        row.push('W'); // Стены
                     } else if (x === 1 && y === 1) {
-                        row.push('E');
+                        row.push('E'); // Спавн игрока
                     } else if (x === 8 && y === 8) {
-                        row.push('E');
+                        row.push('E'); // Офис финиша
                     } else {
                         let rand = Math.random();
-                        if (rand < 0.22) row.push('W');
-                        else if (rand < 0.28) row.push('T');
-                        else row.push('E');
+                        if (rand < 0.22) row.push('W'); // Здание
+                        else if (rand < 0.28) row.push('T'); // Кусты
+                        else if (rand < 0.43) row.push('C'); // 💵 НОВОЕ: Монетка (бабки) на карте!
+                        else row.push('E'); // Пусто
                     }
                 }
                 currentMap.push(row);
@@ -147,33 +153,7 @@
             resetTimer();
         }
 
-        function renderGrid() {
-            const container = document.getElementById('maze-grid');
-            container.innerHTML = '';
-            
-            if (isShredderActive) {
-                container.style.display = 'none';
-                return;
-            } else {
-                container.style.display = 'grid';
-            }
-
-            for (let y = 0; y < 10; y++) {
-                for (let x = 0; x < 10; x++) {
-                    const cell = document.createElement('div');
-                    cell.className = `cell ${currentMap[y][x]}`;
-                    
-                    if (x === p.x && y === p.y) {
-                        cell.innerText = currentSkin;
-                    } else if (x === 8 && y === 8) {
-                        cell.innerText = '🏢';
-                    }
-
-                    cell.onclick = () => handleCellClick(x, y);
-                    container.appendChild(cell);
-                }
-            }
-        }
+        // 3. Обновленная логика перемещения курьера (сбор денег при шаге)
         function handleCellClick(x, y) {
             if (isShredderActive) return;
             if (currentMap[y][x] === 'W' && toolsCount > 0) {
@@ -181,6 +161,7 @@
                 toolsCount--;
                 updateUI();
                 renderGrid();
+                if (typeof playSound === 'function') playSound('win');
                 showToast("Стена снесена мастер-ключом! 🛠️");
                 return;
             }
@@ -192,14 +173,27 @@
                     p.x = x;
                     p.y = y;
                     
+                    // Хэндлер наезда на объекты
                     if (currentMap[y][x] === 'T') {
                         wallet -= 15;
                         currentMap[y][x] = 'E';
+                        if (typeof playSound === 'function') playSound('hit');
                         showToast("Врезался в кусты! Потерял -15$ 🌳");
+                    } 
+                    else if (currentMap[y][x] === 'C') { // 💵 НАСТУПИЛ НА БАБКИ
+                        let coinReward = 20 + Math.floor(Math.random() * 21); // Случайно от 20$ до 40$
+                        wallet += coinReward;
+                        currentMap[y][x] = 'E'; // Убираем монетку с карты
+                        if (typeof playSound === 'function') playSound('win'); // Приятный звук подбора
+                        showToast(`Подобрал заначку! +${coinReward}$ 💵`);
+                    }
+                    else {
+                        if (typeof playSound === 'function') playSound('move');
                     }
                     
                     checkWin();
                     renderGrid();
+                    updateUI();
                 }
             }
         }
