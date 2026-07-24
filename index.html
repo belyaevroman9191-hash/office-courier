@@ -25,7 +25,6 @@
  #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.7); border: 2px solid #34495e; box-sizing: content-box; }
  .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; box-sizing: border-box; transition: background 0.1s; }
  
- /* Исправленные стили с использованием стабильных эмодзи */
  .W { background: #57606f; position: relative; } 
  .W::after { content: "🧱"; font-size: 16px; position: absolute; }
  .E { background: #2f3542; border: 0.5px solid #1e222b; } 
@@ -34,10 +33,10 @@
  .C { background: #2f3542; position: relative; border: 0.5px solid #1e222b; }
  .C::after { content: "💵"; font-size: 16px; position: absolute; }
  .P { background: #2f3542; position: relative; border: 0.5px solid #1e222b; }
- .P::after { content: "👮‍♂️"; font-size: 18px; position: absolute; } /* Изменено на полицейского в шляпе */
+ .P::after { content: "👮‍♂️"; font-size: 18px; position: absolute; }
  .fog { background: #000000 !important; border: 0.5px solid #111114 !important; }
  .fog::after { content: "" !important; }
-   #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; }
+ #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; }
  #toast.show { top: 20px; }
  .shop-container { background: #1e1e24; width: 310px; margin: 10px auto; padding: 12px; border-radius: 10px; text-align: left; border: 1px solid #2e2e38; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
  .shop-title { font-size: 15px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #2e2e38; padding-bottom: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -91,7 +90,7 @@
  <div style="font-weight:bold; font-size: 13px;">Master-Key</div>
  <div style="font-size:11px; color:#aaa;">Снос 1 здания кликом мыши</div>
  </div>
- <button class="buy-btn" id="buy-tool" onclick="buyTool()">100$</button>
+ <button class="buy-btn" id="buy-tool" onclick="buyTool()">3000$</button>
  </div>
  <div class="shop-item">
  <div>
@@ -108,7 +107,7 @@
  <button class="buy-btn" id="buy-scooter" onclick="buyItem('scooter', 1500, '🛴')">1500$</button>
  </div>
  </div>
-  <script>
+ <script>
  const tg = window.Telegram?.WebApp;
  if (tg && typeof tg.expand === 'function') tg.expand();
  let wallet = 0;
@@ -194,9 +193,10 @@
  baseTime = 12; coinChance = 0.08; wallChance = 0.27; 
  } else if (gameMode === 'survival') {
  baseTime = 30; 
- // Динамическое усложнение выживания: +1% стен за каждый уровень (до 40% максимум)
  wallChance = Math.min(0.40, 0.23 + (level * 0.01));
  }
+ let attempts = 0;
+ while (attempts < 100) {
  currentMap = [];
  for (let y = 0; y < 10; y++) {
  let row = [];
@@ -214,6 +214,9 @@
  }
  currentMap.push(row);
  }
+ if (isMapPassable()) { break; }
+ attempts++;
+ }
  if (gameMode !== 'normal' && gameMode !== 'survival') {
  let policeCount = gameMode === 'nightmare' ? 3 : 2;
  let spawned = 0;
@@ -225,7 +228,6 @@
  }
  }
  }
- // Добавление 1 активного преследователя для режима Выживания
  if (gameMode === 'survival') {
  let spawned = 0;
  while (spawned < 1) {
@@ -240,6 +242,32 @@
  renderGrid();
  resetTimer();
  updateUI();
+ }
+
+ function isMapPassable() {
+ let queue = [{x: 1, y: 1}];
+ let visited = Array.from({length: 10}, () => Array(10).fill(false));
+ visited[1][1] = true;
+ let totalCoins = 0;
+ for (let y = 0; y < 10; y++) {
+ for (let x = 0; x < 10; x++) { if (currentMap[y][x] === 'C') totalCoins++; }
+ }
+ let reachableCoins = 0; let isFinishReachable = false;
+ while(queue.length > 0) {
+ let curr = queue.shift();
+ if (curr.x === 8 && curr.y === 8) isFinishReachable = true;
+ if (currentMap[curr.y][curr.x] === 'C') reachableCoins++;
+ let directions = [{x: 0, y: 1}, {x: 0, y: -1}, {x: 1, y: 0}, {x: -1, y: 0}];
+ for (let dir of directions) {
+ let nx = curr.x + dir.x; let ny = curr.y + dir.y;
+ if (nx >= 0 && nx < 10 && ny >= 0 && ny < 10) {
+ if (!visited[ny][nx] && currentMap[ny][nx] !== 'W') {
+ visited[ny][nx] = true; queue.push({x: nx, y: ny});
+ }
+ }
+ }
+ }
+ return isFinishReachable && (reachableCoins === totalCoins);
  }
 
  function patrolPolice() {
@@ -270,9 +298,7 @@
  else { container.style.display = 'grid'; }
  let hasCoinsOnMap = false;
  for (let my = 0; my < 10; my++) {
- for (let mx = 0; mx < 10; mx++) {
- if (currentMap[my][mx] === 'C') { hasCoinsOnMap = true; break; }
- }
+ for (let mx = 0; mx < 10; mx++) { if (currentMap[my][mx] === 'C') { hasCoinsOnMap = true; break; } }
  if (hasCoinsOnMap) break;
  }
  for (let y = 0; y < 10; y++) {
@@ -331,9 +357,7 @@
  if (p.x === 8 && p.y === 8) {
  let coinsLeft = false;
  for (let y = 0; y < 10; y++) {
- for (let x = 0; x < 10; x++) {
- if (currentMap[y][x] === 'C') { coinsLeft = true; break; }
- }
+ for (let x = 0; x < 10; x++) { if (currentMap[y][x] === 'C') { coinsLeft = true; break; } }
  if (coinsLeft) break;
  }
  if (coinsLeft) {
@@ -361,7 +385,7 @@
  if (purchasedItems.scooter) bonus = 6;
  else if (purchasedItems.skin) bonus = 3;
  if (gameMode === 'survival' && timeLeft > 0 && timeLeft < (baseTime + bonus)) {
- // Время не сбрасывается обратно в Выживании, марафон продолжается
+ // Оставляем текущий остаток времени в Выживании
  } else {
  timeLeft = baseTime + bonus; 
  }
@@ -378,6 +402,17 @@
  }
 
  function handleTimeout() {
+ if (gameMode === 'survival') {
+ wallet -= 10000; playSound('hit');
+ showToast("МАТЧ ОКОНЧЕН! Время вышло. Штраф: -10,000$ ❌");
+ level = 1; currentMapCollected = 0;
+ if (wallet <= -500) { shredReason = 'debt'; maxShredClicks = 100; activateShredder(); } 
+ else { 
+ gameMode = 'normal';
+ document.querySelectorAll('.mode-btn').forEach(btn => { btn.classList.toggle('active', btn.getAttribute('data-mode') === 'normal'); });
+ generateLevel(); updateUI(); 
+ }
+ } else {
  let mult = Math.min(Math.floor(level / 5), 4) + 1; 
  let finalTax = currentTax * mult;
  wallet -= finalTax; playSound('hit');
@@ -386,13 +421,14 @@
  if (wallet <= -500) { shredReason = 'debt'; maxShredClicks = 100; activateShredder(); } 
  else { generateLevel(); updateUI(); }
  }
-  function triggerRestart() {
+ }
+ function triggerRestart() {
  if (wallet >= 30) { wallet -= 30; showToast("Вызвано такси, карта обновлена! 🚕"); generateLevel(); updateUI(); } 
  else { showToast("Недостаточно денег для вызова такси! ❌"); }
  }
  function buyTool() {
- if (wallet >= 100) { wallet -= 100; toolsCount++; updateUI(); showToast("Куплен 1 Мастер-Ключ! 🔑"); } 
- else { showToast("Недостаточно средств! ❌"); }
+ if (wallet >= 3000) { wallet -= 3000; toolsCount++; updateUI(); showToast("Куплен 1 Мастер-Ключ! 🔑"); } 
+ else { showToast("Недостаточно средств для покупки ключа! ❌"); }
  }
  function buyItem(type, cost, emoji) {
  if (wallet >= cost) {
@@ -400,7 +436,7 @@
  document.getElementById(`buy-${type === 'skin' ? 'skin' : 'scooter'}`).disabled = true;
  document.getElementById(`buy-${type === 'skin' ? 'skin' : 'scooter'}`).innerText = "Куплено";
  updateUI(); renderGrid(); resetTimer(); showToast("Транспорт успешно обновлен! 🏎️");
- } else { showToast("Недостаточно денег на этот транспорт! ❌"); }
+ } else { showToast("Недостаточно денег на этот transport! ❌"); }
  }
  function activateShredder() {
  isShredderActive = true; clearInterval(timerInterval); currentMapCollected = 0; shredClicks = 0;
@@ -514,7 +550,7 @@
  if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) { handleCellClick(targetX, targetY); }
  });
  autoLoadGame(); generateLevel(); updateUI(); 
- setInterval(autoSaveGame, 2000); /* Сохранение каждые 2 секунды */
+ setInterval(autoSaveGame, 2000);
  </script>
 </body>
 </html>
