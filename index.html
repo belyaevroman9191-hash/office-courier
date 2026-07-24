@@ -230,7 +230,7 @@
  }
  if (gameMode === 'survival') {
  let spawned = 0;
- while (spawned < 1) {
+ while (spawned < 2) {
  let rx = Math.floor(Math.random() * 8) + 1;
  let ry = Math.floor(Math.random() * 8) + 1;
  if (currentMap[ry][rx] === 'E' && !(rx === 1 && ry === 1) && !(rx === 8 && ry === 8)) {
@@ -333,7 +333,7 @@
  let multiplier = 1;
  if (gameMode === 'hardcore') multiplier = 2;
  if (gameMode === 'nightmare') multiplier = 3;
- if (gameMode === 'survival') multiplier = 2; 
+ if (gameMode === 'survival') multiplier = 4; 
  let baseBonus = 25 + Math.floor(Math.random() * 21); 
  let bonusMoney = baseBonus * multiplier;
  wallet += bonusMoney; currentMapCollected += bonusMoney;
@@ -392,14 +392,26 @@
  const timerEl = document.getElementById('timer-txt');
  timerEl.parentElement.classList.remove('timer-danger'); 
  timerEl.innerText = timeLeft;
- timerInterval = setInterval(() => {
- timeLeft--;
- timerEl.innerText = timeLeft;
- if (gameMode === 'nightmare' || gameMode === 'survival') patrolPolice();
- if (timeLeft <= 5) { timerEl.parentElement.classList.add('timer-danger'); }
- if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeout(); }
- }, 1000);
- }
+timerInterval = setInterval(() => {
+    timeLeft--;
+    timerEl.innerText = timeLeft;
+    
+    // ЛОГИКА ДВИЖЕНИЯ МУСОРОВ:
+    if (gameMode === 'nightmare') {
+        patrolPolice(); // В кошмаре ходят обычным темпом (1 раз в секунду)
+    }
+    
+    if (gameMode === 'survival') {
+        patrolPolice(); // Первый шаг в начале секунды
+        setTimeout(() => {
+            patrolPolice(); // Второй шаг через 500 миллисекунд (двойная скорость!)
+        }, 500);
+    }
+    
+    if (timeLeft <= 5) { timerEl.parentElement.classList.add('timer-danger'); }
+    if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeout(); }
+}, 1000);
+}
 
  function handleTimeout() {
  if (gameMode === 'survival') {
