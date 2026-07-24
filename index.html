@@ -25,7 +25,7 @@
  #maze-grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 0px; justify-content: center; margin: 10px auto; background: #2c3e50; padding: 6px; border-radius: 12px; width: 320px; box-shadow: 0 8px 20px rgba(0,0,0,0.7); border: 2px solid #34495e; box-sizing: content-box; }
  .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; box-sizing: border-box; transition: background 0.1s; }
  
- /* Исправленные стили элементов карты с использованием стабильных эмодзи */
+ /* Исправленные стили с использованием стабильных эмодзи */
  .W { background: #57606f; position: relative; } 
  .W::after { content: "🧱"; font-size: 16px; position: absolute; }
  .E { background: #2f3542; border: 0.5px solid #1e222b; } 
@@ -34,10 +34,10 @@
  .C { background: #2f3542; position: relative; border: 0.5px solid #1e222b; }
  .C::after { content: "💵"; font-size: 16px; position: absolute; }
  .P { background: #2f3542; position: relative; border: 0.5px solid #1e222b; }
- .P::after { content: "🚓"; font-size: 16px; position: absolute; }
+ .P::after { content: "👮‍♂️"; font-size: 18px; position: absolute; } /* Изменено на полицейского в шляпе */
  .fog { background: #000000 !important; border: 0.5px solid #111114 !important; }
  .fog::after { content: "" !important; }
- #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; }
+   #toast { position: fixed; top: -60px; left: 50%; transform: translateX(-50%); background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; font-size: 13px; }
  #toast.show { top: 20px; }
  .shop-container { background: #1e1e24; width: 310px; margin: 10px auto; padding: 12px; border-radius: 10px; text-align: left; border: 1px solid #2e2e38; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
  .shop-title { font-size: 15px; font-weight: bold; color: #f1c40f; border-bottom: 1px solid #2e2e38; padding-bottom: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -108,7 +108,7 @@
  <button class="buy-btn" id="buy-scooter" onclick="buyItem('scooter', 1500, '🛴')">1500$</button>
  </div>
  </div>
- <script>
+  <script>
  const tg = window.Telegram?.WebApp;
  if (tg && typeof tg.expand === 'function') tg.expand();
  let wallet = 0;
@@ -194,6 +194,8 @@
  baseTime = 12; coinChance = 0.08; wallChance = 0.27; 
  } else if (gameMode === 'survival') {
  baseTime = 30; 
+ // Динамическое усложнение выживания: +1% стен за каждый уровень (до 40% максимум)
+ wallChance = Math.min(0.40, 0.23 + (level * 0.01));
  }
  currentMap = [];
  for (let y = 0; y < 10; y++) {
@@ -223,6 +225,17 @@
  }
  }
  }
+ // Добавление 1 активного преследователя для режима Выживания
+ if (gameMode === 'survival') {
+ let spawned = 0;
+ while (spawned < 1) {
+ let rx = Math.floor(Math.random() * 8) + 1;
+ let ry = Math.floor(Math.random() * 8) + 1;
+ if (currentMap[ry][rx] === 'E' && !(rx === 1 && ry === 1) && !(rx === 8 && ry === 8)) {
+ currentMap[ry][rx] = 'P'; spawned++;
+ }
+ }
+ }
  p = { x: 1, y: 1 };
  renderGrid();
  resetTimer();
@@ -230,7 +243,7 @@
  }
 
  function patrolPolice() {
- if (gameMode !== 'nightmare' || isShredderActive) return;
+ if ((gameMode !== 'nightmare' && gameMode !== 'survival') || isShredderActive) return;
  let policePositions = [];
  for (let y = 0; y < 10; y++) {
  for (let x = 0; x < 10; x++) { if (currentMap[y][x] === 'P') policePositions.push({x, y}); }
@@ -255,8 +268,6 @@
  container.innerHTML = '';
  if (isShredderActive) { container.style.display = 'none'; return; } 
  else { container.style.display = 'grid'; }
- 
- // Проверяем, остались ли еще заначки с деньгами на карте
  let hasCoinsOnMap = false;
  for (let my = 0; my < 10; my++) {
  for (let mx = 0; mx < 10; mx++) {
@@ -264,7 +275,6 @@
  }
  if (hasCoinsOnMap) break;
  }
-
  for (let y = 0; y < 10; y++) {
  for (let x = 0; x < 10; x++) {
  const cell = document.createElement('div');
@@ -273,10 +283,7 @@
  else {
  cell.className = `cell ${currentMap[y][x]}`;
  if (x === p.x && y === p.y) { cell.innerText = currentSkin; } 
- else if (x === 8 && y === 8) { 
- // Если деньги на карте есть — дверь закрыта (🚪). Все собрано — финиш активен (🏁)
- cell.innerText = hasCoinsOnMap ? '🚪' : '🏁'; 
- }
+ else if (x === 8 && y === 8) { cell.innerText = hasCoinsOnMap ? '🚪' : '🏁'; }
  }
  cell.onclick = () => handleCellClick(x, y);
  container.appendChild(cell);
@@ -317,12 +324,11 @@
  function handlePoliceHit(y, x) {
  wallet -= 20000; currentMap[y][x] = 'E'; playSound('siren');
  if (wallet <= -500) { shredReason = 'police'; maxShredClicks = 200; activateShredder(); } 
- else { showToast("Вас поймала полиция! Штраф -20,000$ 🚓"); }
+ else { showToast("Вас повязали МУСОРА! Штраф -20,000$ 👮‍♂️"); }
  }
 
  function checkWin() {
  if (p.x === 8 && p.y === 8) {
- // Новая логика: сканируем карту на наличие оставшихся денег перед победой
  let coinsLeft = false;
  for (let y = 0; y < 10; y++) {
  for (let x = 0; x < 10; x++) {
@@ -334,11 +340,17 @@
  showToast("План не выполнен! Соберите все деньги на карте перед уходом! 💵");
  return;
  }
+ if (gameMode === 'survival') {
+ let bonusLimit = 30 + (purchasedItems.scooter ? 6 : (purchasedItems.skin ? 3 : 0));
+ let dynamicBonus = Math.max(1, 5 - Math.floor(level / 2.5)); 
+ timeLeft = Math.min(timeLeft + dynamicBonus, bonusLimit); 
+ showToast(`Уровень пройден! +${dynamicBonus} сек к таймеру ⏱️`);
+ }
  let reward = 100 + (level * 15);
  wallet += reward; currentMapCollected += reward; 
  if (currentMapCollected > maxMapRecord) { maxMapRecord = currentMapCollected; }
  level++; playSound('win');
- showToast(`Все заказы доставлены! Получено +${reward}$ 🏁`);
+ if (gameMode !== 'survival') showToast(`Все заказы доставлены! Получено +${reward}$ 🏁`);
  generateLevel(); updateUI();
  }
  }
@@ -348,14 +360,18 @@
  let bonus = 0;
  if (purchasedItems.scooter) bonus = 6;
  else if (purchasedItems.skin) bonus = 3;
+ if (gameMode === 'survival' && timeLeft > 0 && timeLeft < (baseTime + bonus)) {
+ // Время не сбрасывается обратно в Выживании, марафон продолжается
+ } else {
  timeLeft = baseTime + bonus; 
+ }
  const timerEl = document.getElementById('timer-txt');
  timerEl.parentElement.classList.remove('timer-danger'); 
  timerEl.innerText = timeLeft;
  timerInterval = setInterval(() => {
  timeLeft--;
  timerEl.innerText = timeLeft;
- if (gameMode === 'nightmare') patrolPolice();
+ if (gameMode === 'nightmare' || gameMode === 'survival') patrolPolice();
  if (timeLeft <= 5) { timerEl.parentElement.classList.add('timer-danger'); }
  if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeout(); }
  }, 1000);
@@ -370,7 +386,7 @@
  if (wallet <= -500) { shredReason = 'debt'; maxShredClicks = 100; activateShredder(); } 
  else { generateLevel(); updateUI(); }
  }
- function triggerRestart() {
+  function triggerRestart() {
  if (wallet >= 30) { wallet -= 30; showToast("Вызвано такси, карта обновлена! 🚕"); generateLevel(); updateUI(); } 
  else { showToast("Недостаточно денег для вызова такси! ❌"); }
  }
@@ -393,9 +409,9 @@
  const btnEl = document.getElementById('shred-btn');
  const emojiEl = document.getElementById('shred-emoji');
  if (shredReason === 'police') {
- titleEl.innerText = "🚨 Задержан полицией! 🚨";
- descEl.innerText = "У вас не нашлось 20,000$ на оплату штрафа. Сделайте 200 кликов, чтобы вызвать адвоката!";
- btnEl.innerText = "📱 Вызвать адвоката"; emojiEl.innerText = "👨‍⚖️";
+ titleEl.innerText = "🚨 Повязали МУСОРА! 🚨";
+ descEl.innerText = "У вас нет денег на штраф. Сделайте 200 звонков адвокату, чтобы он вытащил вас из дежурки!";
+ btnEl.innerText = "📱 Позвонить адвокату"; emojiEl.innerText = "👨‍⚖️";
  } else {
  titleEl.innerText = "⚠️ Отработка за долги! ⚠️";
  descEl.innerText = "Вы задолжали более -500$. Совершите 100 звонков клиентам, чтобы полностью списать ваш долг!";
@@ -418,7 +434,7 @@
  document.getElementById('shred-progress').style.width = `${percent}%`;
  if (shredClicks >= maxShredClicks) {
  isShredderActive = false; document.getElementById('shredder-screen').style.display = 'none';
- if (shredReason === 'police') { wallet = 100; showToast("Адвокат решил вопрос! Вы свободны. 💼"); } 
+ if (shredReason === 'police') { wallet = 100; showToast("Адвокат развалил дело! Вы свободны. 💼"); } 
  else { wallet = 0; currentTax = 50; showToast("Отработка завершена! Долг полностью списан. ✨"); }
  generateLevel(); updateUI();
  }
@@ -497,7 +513,8 @@
  else return;
  if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) { handleCellClick(targetX, targetY); }
  });
- autoLoadGame(); generateLevel(); updateUI(); setInterval(autoSaveGame, 2000);
+ autoLoadGame(); generateLevel(); updateUI(); 
+ setInterval(autoSaveGame, 2000); /* Сохранение каждые 2 секунды */
  </script>
 </body>
 </html>
