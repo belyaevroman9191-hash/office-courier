@@ -118,7 +118,8 @@
  let level = 1;
  let baseTime = 15; 
  let timeLeft = 15; 
- let timerInterval = null; 
+ let timerInterval = null;
+ let patrolInterval = null; /* Индивидуальный быстрый таймер для мусоров */
  let currentTax = 50; 
  let shredClicks = 0; 
  let isShredderActive = false;
@@ -174,7 +175,6 @@
  document.querySelectorAll('.mode-btn').forEach(btn => {
  btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
  });
- currentMapCollected = 0; 
  showToast(`Режим изменен: ${mode.toUpperCase()} ⚙️`);
  generateLevel();
  updateUI();
@@ -225,9 +225,10 @@
  }
  }
  }
+ // Изменение: Ровно 2 мусора в Выживании
  if (gameMode === 'survival') {
  let spawned = 0;
- while (spawned < 1) {
+ while (spawned < 2) {
  let rx = Math.floor(Math.random() * 8) + 1;
  let ry = Math.floor(Math.random() * 8) + 1;
  if (currentMap[ry][rx] === 'E' && !(rx === 1 && ry === 1) && !(rx === 8 && ry === 8)) {
@@ -244,7 +245,7 @@
  function isMapPassable() {
  let queue = [{x: 1, y: 1}];
  let visited = Array.from({length: 10}, () => Array(10).fill(false));
- visited[1][1] = true;
+ visited = true;
  let totalCoins = 0;
  for (let y = 0; y < 10; y++) {
  for (let x = 0; x < 10; x++) { if (currentMap[y][x] === 'C') totalCoins++; }
@@ -327,10 +328,11 @@
  wallet -= 15; currentMap[y][x] = 'E'; playSound('hit');
  showToast("Врезался в кусты! Потерял -15$ 🌳");
  } else if (currentMap[y][x] === 'C') { 
+ // Изменение: Повышенные х-коэффициенты прибыли для каждого режима
  let multiplier = 1;
  if (gameMode === 'hardcore') multiplier = 2;
  if (gameMode === 'nightmare') multiplier = 3;
- if (gameMode === 'survival') multiplier = 2; 
+ if (gameMode === 'survival') multiplier = 4; /* Повышено до х4 прибыли */
  let baseBonus = 25 + Math.floor(Math.random() * 21); 
  let bonusMoney = baseBonus * multiplier;
  wallet += bonusMoney; currentMapCollected += bonusMoney;
@@ -378,31 +380,41 @@
 
  function resetTimer() {
  clearInterval(timerInterval);
+ clearInterval(patrolInterval); /* Очищаем старый патрульный цикл */
  let bonus = 0;
  if (purchasedItems.scooter) bonus = 6;
  else if (purchasedItems.skin) bonus = 3;
  if (gameMode === 'survival' && timeLeft > 0 && timeLeft < (baseTime + bonus)) {
- // Оставляем текущий остаток времени в Выживании
+ // Сквозной таймер выживания
  } else {
  timeLeft = baseTime + bonus; 
  }
  const timerEl = document.getElementById('timer-txt');
  timerEl.parentElement.classList.remove('timer-danger'); 
  timerEl.innerText = timeLeft;
+ 
+ // Основной таймер времени
  timerInterval = setInterval(() => {
  timeLeft--;
  timerEl.innerText = timeLeft;
- if (gameMode === 'nightmare' || gameMode === 'survival') patrolPolice();
+ if (gameMode === 'nightmare') patrolPolice(); /* В кошмаре копы ходят стандартно */
  if (timeLeft <= 5) { timerEl.parentElement.classList.add('timer-danger'); }
- if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeout(); }
+ if (timeLeft <= 0) { clearInterval(timerInterval); clearInterval(patrolInterval); handleTimeout(); }
  }, 1000);
+
+ // Изменение: Сверхбыстрый таймер движения копов (500мс) только в режиме Выживания
+ if (gameMode === 'survival') {
+ patrolInterval = setInterval(() => {
+ patrolPolice();
+ }, 500);
+ }
  }
 
  function handleTimeout() {
  if (gameMode === 'survival') {
  wallet -= 10000; playSound('hit');
  showToast("МАТЧ ОКОНЧЕН! Время вышло. Штраф: -10,000$ ❌");
- level = 1; currentMapCollected = 0;
+ level = 1; 
  if (wallet <= -500) { shredReason = 'debt'; maxShredClicks = 100; activateShredder(); } 
  else { 
  gameMode = 'normal';
@@ -433,10 +445,10 @@
  document.getElementById(`buy-${type === 'skin' ? 'skin' : 'scooter'}`).disabled = true;
  document.getElementById(`buy-${type === 'skin' ? 'skin' : 'scooter'}`).innerText = "Куплено";
  updateUI(); renderGrid(); resetTimer(); showToast("Транспорт успешно обновлен! 🏎️");
- } else { showToast("Недостаточно денег на этот transport! ❌"); }
+ } else { showToast("Недостаточно денег на этот транспорт! ❌"); }
  }
  function activateShredder() {
- isShredderActive = true; clearInterval(timerInterval); currentMapCollected = 0; shredClicks = 0;
+ isShredderActive = true; clearInterval(timerInterval); clearInterval(patrolInterval); currentMapCollected = 0; shredClicks = 0;
  const titleEl = document.getElementById('shred-title');
  const descEl = document.getElementById('shred-desc');
  const btnEl = document.getElementById('shred-btn');
